@@ -1,7 +1,13 @@
-// ABOUTME: Home page with hero section, intro, and current focus areas
-// ABOUTME: First impression targeting senior engineers and ML teams
+// ABOUTME: Home page with bold hero section and vertical career timeline
+// ABOUTME: First impression page combining experience, projects, and talks chronologically
 
-import Link from "next/link";
+import Timeline from "./components/Timeline";
+
+const SOCIAL_LINKS = [
+  { href: "https://github.com/Nk272", label: "GitHub" },
+  { href: "https://linkedin.com/in/nikunj-goyal-1831b517a", label: "LinkedIn" },
+  { href: "mailto:nkgoyal272@gmail.com", label: "Email" },
+];
 
 const FOCUS_AREAS = [
   "GenAI Systems",
@@ -10,61 +16,93 @@ const FOCUS_AREAS = [
   "Production ML",
 ];
 
-const SOCIAL_LINKS = [
-  { href: "https://github.com/Nk272", label: "GitHub" },
-  { href: "https://linkedin.com/in/nikunj-goyal-1831b517a", label: "LinkedIn" },
-];
-
 export default function Home() {
   return (
-    <div className="container fade-in">
-      <section className="py-24 md:py-32">
+    <div className="fade-in">
+      <section
+        style={{
+          padding: "6rem 0 4rem",
+          textAlign: "center",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "600px",
+            height: "600px",
+            background:
+              "radial-gradient(circle, rgba(56,189,248,0.04) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+
         <p
-          className="mono text-sm mb-4"
-          style={{ color: "var(--text-muted)" }}
+          className="mono"
+          style={{
+            fontSize: "0.85rem",
+            color: "var(--text-muted)",
+            marginBottom: "1rem",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}
         >
           Member of Technical Staff, Adobe
         </p>
 
         <h1
-          className="text-4xl md:text-5xl font-semibold tracking-tight mb-4"
-          style={{ color: "var(--text-primary)" }}
+          className="gradient-text"
+          style={{
+            fontSize: "clamp(3rem, 8vw, 5.5rem)",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
+            marginBottom: "1.5rem",
+          }}
         >
           Nikunj Goyal
         </h1>
 
         <p
-          className="text-xl md:text-2xl mb-8"
-          style={{ color: "var(--text-secondary)" }}
+          style={{
+            fontSize: "1.25rem",
+            color: "var(--text-secondary)",
+            maxWidth: "600px",
+            margin: "0 auto 2rem",
+            lineHeight: 1.6,
+          }}
         >
-          Engineering intelligence into design{" "}
-          <span className="mono" style={{ color: "var(--accent)" }}>
-            {"->"}
-          </span>{" "}
-          ML, Vector graphics, Performance
+          Building production ML systems, multi-agent orchestration, and
+          GPU-accelerated pipelines at Adobe.
+          <br />
+          <span className="mono" style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+            IIT Roorkee, Applied Mathematics
+          </span>
         </p>
 
-        <p
-          className="text-lg max-w-2xl mb-8 leading-relaxed"
-          style={{ color: "var(--text-secondary)" }}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "0.75rem",
+            marginBottom: "3rem",
+          }}
         >
-          I build production ML systems that ship. Currently focused on multi-agent
-          orchestration, vectorization pipelines, and GPU-accelerated inference at
-          Adobe. IIT Roorkee, Applied Mathematics.
-        </p>
-
-        <div className="flex items-center gap-4 mb-16">
           {SOCIAL_LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+              target={link.href.startsWith("mailto") ? undefined : "_blank"}
+              rel={link.href.startsWith("mailto") ? undefined : "noopener noreferrer"}
+              className="glass-card"
               style={{
-                background: "var(--bg-secondary)",
+                padding: "0.5rem 1.25rem",
+                fontSize: "0.85rem",
                 color: "var(--text-primary)",
-                border: "1px solid var(--border)",
+                display: "inline-block",
               }}
             >
               {link.label}
@@ -72,92 +110,46 @@ export default function Home() {
           ))}
         </div>
 
-        <div>
-          <h2
-            className="text-sm font-medium uppercase tracking-wider mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            Current Focus
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            {FOCUS_AREAS.map((area) => (
-              <span
-                key={area}
-                className="mono text-sm px-3 py-1 rounded"
-                style={{
-                  background: "var(--accent-muted)",
-                  color: "var(--accent)",
-                }}
-              >
-                {area}
-              </span>
-            ))}
-          </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          {FOCUS_AREAS.map((area) => (
+            <span
+              key={area}
+              className="mono"
+              style={{
+                fontSize: "0.75rem",
+                padding: "0.3rem 0.75rem",
+                borderRadius: "4px",
+                background: "var(--accent-muted)",
+                color: "var(--accent)",
+              }}
+            >
+              {area}
+            </span>
+          ))}
         </div>
       </section>
 
-      <section
-        className="py-16"
-        style={{ borderTop: "1px solid var(--border)" }}
-      >
-        <div className="grid md:grid-cols-3 gap-8">
-          <Link
-            href="/experience"
-            className="group p-6 rounded-lg transition-colors"
-            style={{
-              background: "var(--bg-secondary)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <h3
-              className="font-medium mb-2"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Experience
-            </h3>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Adobe, IIT Kanpur - Production ML, multi-agent systems
-            </p>
-          </Link>
-
-          <Link
-            href="/projects"
-            className="group p-6 rounded-lg transition-colors"
-            style={{
-              background: "var(--bg-secondary)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <h3
-              className="font-medium mb-2"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Projects
-            </h3>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              RAG systems, GPU optimization, genetic algorithms
-            </p>
-          </Link>
-
-          <Link
-            href="/talks"
-            className="group p-6 rounded-lg transition-colors"
-            style={{
-              background: "var(--bg-secondary)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <h3
-              className="font-medium mb-2"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Talks
-            </h3>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              KubeCon - GPUs in Kubernetes, AI infrastructure
-            </p>
-          </Link>
-        </div>
+      <section className="container" style={{ paddingBottom: "4rem" }}>
+        <h2
+          style={{
+            textAlign: "center",
+            fontSize: "0.8rem",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
+            marginBottom: "1rem",
+          }}
+        >
+          Timeline
+        </h2>
+        <Timeline />
       </section>
     </div>
   );

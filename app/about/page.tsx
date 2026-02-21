@@ -35,8 +35,7 @@ export default function AboutPage() {
         <div className="container fade-in">
             <section className="py-16 md:py-24">
                 <h1
-                    className="text-3xl font-semibold tracking-tight mb-4"
-                    style={{ color: "var(--text-primary)" }}
+                    className="text-3xl font-semibold tracking-tight mb-4 gradient-text"
                 >
                     About
                 </h1>
@@ -47,11 +46,11 @@ export default function AboutPage() {
                     How I think about engineering problems.
                 </p>
 
-                <div className="space-y-12">
-                    <div>
+                <div className="space-y-8">
+                    <div className="glass-card p-6">
                         <h2
                             className="text-sm font-medium uppercase tracking-wider mb-4"
-                            style={{ color: "var(--text-muted)" }}
+                            style={{ color: "var(--accent)" }}
                         >
                             Approach to Hard Problems
                         </h2>
@@ -74,13 +73,10 @@ export default function AboutPage() {
                         </ul>
                     </div>
 
-                    <div
-                        className="pt-12"
-                        style={{ borderTop: "1px solid var(--border)" }}
-                    >
+                    <div className="glass-card p-6">
                         <h2
                             className="text-sm font-medium uppercase tracking-wider mb-4"
-                            style={{ color: "var(--text-muted)" }}
+                            style={{ color: "var(--accent)" }}
                         >
                             Values in Systems Design
                         </h2>
@@ -103,13 +99,10 @@ export default function AboutPage() {
                         </ul>
                     </div>
 
-                    <div
-                        className="pt-12"
-                        style={{ borderTop: "1px solid var(--border)" }}
-                    >
+                    <div className="glass-card p-6">
                         <h2
                             className="text-sm font-medium uppercase tracking-wider mb-4"
-                            style={{ color: "var(--text-muted)" }}
+                            style={{ color: "var(--accent)" }}
                         >
                             What Excites Me
                         </h2>

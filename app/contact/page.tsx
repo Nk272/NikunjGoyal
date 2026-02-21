@@ -8,8 +8,6 @@ export const metadata: Metadata = {
     description: "Get in touch for research collaboration, ML systems work, or vector graphics projects.",
 };
 
-
-
 const INTERESTS = [
     {
         title: "Research Collaboration",
@@ -36,8 +34,7 @@ export default function ContactPage() {
         <div className="container fade-in">
             <section className="py-16 md:py-24">
                 <h1
-                    className="text-3xl font-semibold tracking-tight mb-4"
-                    style={{ color: "var(--text-primary)" }}
+                    className="text-3xl font-semibold tracking-tight mb-4 gradient-text"
                 >
                     Contact
                 </h1>
@@ -52,11 +49,7 @@ export default function ContactPage() {
                     {INTERESTS.map((interest, index) => (
                         <div
                             key={index}
-                            className="p-6 rounded-lg"
-                            style={{
-                                background: "var(--bg-secondary)",
-                                border: "1px solid var(--border)",
-                            }}
+                            className="glass-card p-6"
                         >
                             <h2
                                 className="font-medium mb-2"
@@ -76,11 +69,11 @@ export default function ContactPage() {
 
                 <div
                     className="pt-12"
-                    style={{ borderTop: "1px solid var(--border)" }}
+                    style={{ borderTop: "1px solid var(--glass-border)" }}
                 >
                     <h2
                         className="text-sm font-medium uppercase tracking-wider mb-6"
-                        style={{ color: "var(--text-muted)" }}
+                        style={{ color: "var(--accent)" }}
                     >
                         Get in Touch
                     </h2>

@@ -75,8 +75,7 @@ export default function ExperiencePage() {
         <div className="container fade-in">
             <section className="py-16 md:py-24">
                 <h1
-                    className="text-3xl font-semibold tracking-tight mb-4"
-                    style={{ color: "var(--text-primary)" }}
+                    className="text-3xl font-semibold tracking-tight mb-4 gradient-text"
                 >
                     Experience
                 </h1>
@@ -87,15 +86,11 @@ export default function ExperiencePage() {
                     Building production ML systems and performance-critical pipelines.
                 </p>
 
-                <div className="space-y-12">
+                <div className="space-y-8">
                     {EXPERIENCES.map((exp, index) => (
                         <article
                             key={index}
-                            className="p-6 rounded-lg"
-                            style={{
-                                background: "var(--bg-secondary)",
-                                border: "1px solid var(--border)",
-                            }}
+                            className="glass-card p-6"
                         >
                             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
                                 <div>
@@ -121,7 +116,7 @@ export default function ExperiencePage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Problem
                                     </h3>
@@ -133,7 +128,7 @@ export default function ExperiencePage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Solution
                                     </h3>
@@ -145,7 +140,7 @@ export default function ExperiencePage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Impact
                                     </h3>
