@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     description: "Get in touch for research collaboration, ML systems work, or vector graphics projects.",
 };
 
+
+
 const INTERESTS = [
     {
         title: "Research Collaboration",
