@@ -47,8 +47,7 @@ export default function DeepDivesPage() {
         <div className="container fade-in">
             <section className="py-16 md:py-24">
                 <h1
-                    className="text-3xl font-semibold tracking-tight mb-4"
-                    style={{ color: "var(--text-primary)" }}
+                    className="text-3xl font-semibold tracking-tight mb-4 gradient-text"
                 >
                     Deep Dives
                 </h1>
@@ -63,11 +62,7 @@ export default function DeepDivesPage() {
                     {DEEP_DIVES.map((dive, index) => (
                         <article
                             key={index}
-                            className="p-6 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                            style={{
-                                background: "var(--bg-secondary)",
-                                border: "1px solid var(--border)",
-                            }}
+                            className="glass-card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
                         >
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">

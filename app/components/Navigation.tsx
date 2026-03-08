@@ -1,5 +1,5 @@
 // ABOUTME: Header navigation component for the portfolio
-// ABOUTME: Minimalist fixed nav with links to all main sections
+// ABOUTME: Glass-effect fixed nav with links to all main sections
 
 "use client";
 
@@ -22,13 +22,17 @@ export default function Navigation() {
     return (
         <header
             className="fixed top-0 left-0 right-0 z-50"
-            style={{ background: "var(--bg-primary)", borderBottom: "1px solid var(--border)" }}
+            style={{
+                background: "rgba(5, 5, 8, 0.8)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderBottom: "1px solid var(--glass-border)",
+            }}
         >
             <nav className="container flex items-center justify-between h-16">
                 <Link
                     href="/"
-                    className="font-semibold text-lg tracking-tight"
-                    style={{ color: "var(--text-primary)" }}
+                    className="font-semibold text-lg tracking-tight gradient-text"
                 >
                     NK
                 </Link>
@@ -41,7 +45,7 @@ export default function Navigation() {
                                     href={item.href}
                                     className="text-sm transition-colors"
                                     style={{
-                                        color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                                        color: isActive ? "var(--accent)" : "var(--text-secondary)",
                                     }}
                                 >
                                     {item.label}

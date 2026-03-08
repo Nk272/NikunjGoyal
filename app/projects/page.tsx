@@ -59,8 +59,7 @@ export default function ProjectsPage() {
         <div className="container fade-in">
             <section className="py-16 md:py-24">
                 <h1
-                    className="text-3xl font-semibold tracking-tight mb-4"
-                    style={{ color: "var(--text-primary)" }}
+                    className="text-3xl font-semibold tracking-tight mb-4 gradient-text"
                 >
                     Selected Projects
                 </h1>
@@ -75,11 +74,7 @@ export default function ProjectsPage() {
                     {PROJECTS.map((project, index) => (
                         <article
                             key={index}
-                            className="p-6 rounded-lg"
-                            style={{
-                                background: "var(--bg-secondary)",
-                                border: "1px solid var(--border)",
-                            }}
+                            className="glass-card p-6"
                         >
                             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
                                 <h2
@@ -103,7 +98,7 @@ export default function ProjectsPage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Problem
                                     </h3>
@@ -118,7 +113,7 @@ export default function ProjectsPage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Approach
                                     </h3>
@@ -133,7 +128,7 @@ export default function ProjectsPage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Trade-offs
                                     </h3>
@@ -148,7 +143,7 @@ export default function ProjectsPage() {
                                 <div>
                                     <h3
                                         className="text-sm font-medium uppercase tracking-wider mb-2"
-                                        style={{ color: "var(--text-muted)" }}
+                                        style={{ color: "var(--accent)" }}
                                     >
                                         Impact
                                     </h3>
@@ -164,7 +159,7 @@ export default function ProjectsPage() {
                                     <div className="md:col-span-2">
                                         <h3
                                             className="text-sm font-medium uppercase tracking-wider mb-2"
-                                            style={{ color: "var(--text-muted)" }}
+                                            style={{ color: "var(--accent)" }}
                                         >
                                             What I'd Improve
                                         </h3>
