@@ -1,8 +1,6 @@
 /* ABOUTME: Global styles and design tokens for the portfolio */
 /* ABOUTME: Dark design with graph-paper grid, warm accent palette, and scroll-reveal animations */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@300..600&display=swap');
-
 :root {
   --ink: #0b0c11;
   --ink-2: #101218;
