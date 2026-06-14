@@ -1,0 +1,411 @@
+<!-- ABOUTME: Journey page for Nikunj Goyal's portfolio -->
+<!-- ABOUTME: Displays the life timeline with milestone cards and a connecting bezier curve -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journey — Nikunj Goyal</title>
+  <meta name="description"
+    content="The control points of Nikunj Goyal's journey — IIT Roorkee, Adobe Illustrator, KubeCon talks.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@300..600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t);</script>
+  <style>
+    /* ---- JOURNEY TIMELINE ---- */
+    .journey-stage {
+      position: relative
+    }
+
+    .journey-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      overflow: visible
+    }
+
+    .milestones {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 60px
+    }
+
+    .ms {
+      display: grid;
+      grid-template-columns: 1fr 64px 1fr;
+      align-items: center;
+      gap: 0
+    }
+
+    .ms .card {
+      background: linear-gradient(165deg, var(--ink-2), rgba(16, 18, 24, .5));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 26px 28px;
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity .7s, transform .7s;
+      box-shadow: 0 24px 50px -34px rgba(0, 0, 0, .9);
+    }
+
+    .ms.in .card {
+      opacity: 1;
+      transform: none
+    }
+
+    .ms:nth-child(even) .card {
+      grid-column: 3
+    }
+
+    .ms:nth-child(odd) .card {
+      grid-column: 1;
+      text-align: right
+    }
+
+    .ms .node {
+      grid-column: 2;
+      justify-self: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--ink);
+      border: 2px solid var(--accent);
+      position: relative;
+      z-index: 2;
+      transition: .4s;
+    }
+
+    .ms.in .node {
+      box-shadow: 0 0 0 6px rgba(255, 90, 60, .12), 0 0 22px rgba(255, 90, 60, .35)
+    }
+
+    .ms .node::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: scale(0);
+      transition: transform .5s .15s;
+    }
+
+    .ms.in .node::after {
+      transform: scale(1)
+    }
+
+    .ms .yr {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .14em;
+      color: var(--handle);
+      margin-bottom: 8px;
+      display: block
+    }
+
+    .ms h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(20px, 2.6vw, 27px);
+      line-height: 1.08;
+      margin-bottom: 6px
+    }
+
+    .ms .where {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .08em;
+      color: var(--faint);
+      margin-bottom: 12px
+    }
+
+    .ms p {
+      color: #bcc0ca;
+      font-size: 15px;
+      max-width: 42ch
+    }
+
+    .ms:nth-child(odd) p {
+      margin-left: auto
+    }
+
+    .ms .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 14px
+    }
+
+    .ms:nth-child(odd) .pills {
+      justify-content: flex-end
+    }
+
+    @media (max-width: 760px) {
+      .ms {
+        grid-template-columns: 34px 1fr;
+        gap: 14px
+      }
+
+      .ms .node {
+        grid-column: 1
+      }
+
+      .ms:nth-child(even) .card,
+      .ms:nth-child(odd) .card {
+        grid-column: 2;
+        text-align: left
+      }
+
+      .ms:nth-child(odd) p {
+        margin-left: 0
+      }
+
+      .ms:nth-child(odd) .pills {
+        justify-content: flex-start
+      }
+
+      .journey-svg {
+        left: 17px;
+        width: 2px
+      }
+    }
+
+    /* ---- STATS BAND ---- */
+    .band {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 60px;
+    }
+
+    .band .cell {
+      background: var(--ink-2);
+      padding: 30px 22px;
+      text-align: center
+    }
+
+    .band .n {
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      line-height: 1;
+      color: var(--text)
+    }
+
+    .band .n .u {
+      color: var(--accent);
+      font-size: .5em;
+      vertical-align: super;
+      font-family: var(--font-mono)
+    }
+
+    .band .l {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 12px
+    }
+
+    @media (max-width: 680px) {
+      .band {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <svg class="grain">
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#n)" />
+  </svg>
+
+  <nav>
+    <a href="index.html" class="brand"><b>&#9679;</b> Nikunj&nbsp;Goyal<span style="color:var(--faint)"></span></a>
+    <div class="nav-right">
+      <div class="links">
+        <a href="journey.html" style="color:var(--text)">Journey</a>
+        <a href="craft.html" target="_blank">Craft</a>
+        <a href="offclock.html" target="_blank">Off-Clock</a>
+        <a href="contact.html" target="_blank">Contact</a>
+      </div>
+      <button class="theme-toggle" id="themeToggle">light</button>
+    </div>
+  </nav>
+
+  <section style="padding-top:120px">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="num">01</span>
+        <h1
+          style="font-family:var(--font-display);font-weight:360;font-size:clamp(28px,4.4vw,48px);letter-spacing:-.015em;line-height:1">
+          The control points</h1>
+        <span class="sub">8 years · 3 cities · 1 continuous curve</span>
+      </div>
+
+      <div class="journey-stage">
+        <svg class="journey-svg" id="jsvg" preserveAspectRatio="none">
+          <path id="jpath" fill="none" stroke="url(#jgrad)" stroke-width="2" />
+          <defs>
+            <linearGradient id="jgrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--handle)" />
+              <stop offset="1" stop-color="var(--accent)" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div class="milestones">
+          <div class="ms">
+            <div class="card">
+              <span class="yr">&#8776; 2019 — 2024 · P&#8320;</span>
+              <h3>IIT Roorkee</h3>
+              <div class="where">Master in Applied Mathematics · 5 years</div>
+              <p>Where the foundations were laid — five years of proofs, models, and the language of curves. Also found
+                time off the chalkboard with the campus Economics Club, arguing markets and incentives.</p>
+              <div class="pills"><span class="pill">applied maths</span><span class="pill">economics club</span><span
+                  class="pill">5-yr integrated</span></div>
+            </div>
+            <div class="node"></div>
+          </div>
+
+          <div class="ms">
+            <div class="node"></div>
+            <div class="card">
+              <span class="yr">&#8776; 2024 — 2027 · P&#8321;</span>
+              <h3>Adobe — Illustrator team</h3>
+              <div class="where">Image processing · Bezier geometry · C++ · 3 years</div>
+              <p>Turned theory into tools millions of designers touch daily. Worked deep in image processing and the
+                math of bezier curves, written in performance-critical C++. Filed <b style="color:var(--accent)">5
+                  patents</b> along the way.</p>
+              <div class="pills"><span class="pill hot">5 patents</span><span class="pill">C++</span><span
+                  class="pill">bezier curves</span><span class="pill">image processing</span></div>
+            </div>
+          </div>
+
+          <div class="ms">
+            <div class="card">
+              <span class="yr">2024 · P&#8322;</span>
+              <h3>KubeCon — Salt Lake City</h3>
+              <div class="where">Speaker · SLC 2024</div>
+              <p>First time on the big stage, sharing the work with the global cloud-native community.</p>
+              <div class="pills"><span class="pill">speaker</span><span class="pill">talk #1</span></div>
+            </div>
+            <div class="node"></div>
+          </div>
+
+          <div class="ms">
+            <div class="node"></div>
+            <div class="card">
+              <span class="yr">2025 · P&#8323;</span>
+              <h3>KubeCon — Atlanta</h3>
+              <div class="where">Speaker · Atlanta 2025</div>
+              <p>Back on stage a second time — because once you've found the curve, you keep drawing it.</p>
+              <div class="pills"><span class="pill">speaker</span><span class="pill">talk #2</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band reveal">
+        <div class="cell">
+          <div class="n">5</div>
+          <div class="l">Patents filed</div>
+        </div>
+        <div class="cell">
+          <div class="n">2<span class="u">x</span></div>
+          <div class="l">KubeCon talks</div>
+        </div>
+        <div class="cell">
+          <div class="n">8<span class="u">yrs</span></div>
+          <div class="l">Maths + craft</div>
+        </div>
+        <div class="cell">
+          <div class="n">350<span class="u">cc</span></div>
+          <div class="l">On two wheels</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="sig">— anchored, not fixed.</div>
+    <div class="fine">Nikunj Goyal · built 2026 · India</div>
+  </footer>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById('themeToggle');
+      var root = document.documentElement;
+      UpdateToggleText();
+      toggle.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        UpdateToggleText();
+      });
+      function UpdateToggleText() {
+        toggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      }
+
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { threshold: .18 });
+      document.querySelectorAll('.reveal,.ms').forEach(function (el) { io.observe(el); });
+
+      var jsvg = document.getElementById('jsvg'), jpath = document.getElementById('jpath');
+      var stage = document.querySelector('.journey-stage');
+      function BuildJourney() {
+        if (!stage) return;
+        var nodes = [].slice.call(document.querySelectorAll('.ms .node'));
+        if (nodes.length < 2) return;
+        var sb = stage.getBoundingClientRect();
+        jsvg.setAttribute('viewBox', '0 0 ' + sb.width + ' ' + sb.height);
+        var pts = nodes.map(function (n) {
+          var r = n.getBoundingClientRect();
+          return { x: r.left - sb.left + r.width / 2, y: r.top - sb.top + r.height / 2 };
+        });
+        var d = 'M' + pts[0].x + ' ' + pts[0].y;
+        for (var i = 0; i < pts.length - 1; i++) {
+          var p0 = pts[i ? i - 1 : 0], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+          var c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+          var c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+          d += ' C ' + c1x + ' ' + c1y + ', ' + c2x + ' ' + c2y + ', ' + p2.x + ' ' + p2.y;
+        }
+        jpath.setAttribute('d', d);
+        var len = jpath.getTotalLength();
+        jpath.style.strokeDasharray = len;
+        jpath.style.strokeDashoffset = len;
+        jpath.style.transition = 'none';
+        requestAnimationFrame(function () {
+          jpath.style.transition = 'stroke-dashoffset 2.2s ease';
+          jpath.style.strokeDashoffset = 0;
+        });
+      }
+      var rt;
+      function Debounced() { clearTimeout(rt); rt = setTimeout(BuildJourney, 180); }
+      setTimeout(BuildJourney, 400);
+      addEventListener('resize', Debounced);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { setTimeout(BuildJourney, 200); });
+    })();
+  </script>
+</body>
+
+</html>

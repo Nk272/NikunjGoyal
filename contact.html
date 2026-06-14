@@ -1,0 +1,188 @@
+<!-- ABOUTME: Contact page for Nikunj Goyal's portfolio -->
+<!-- ABOUTME: Provides email, LinkedIn, GitHub links and resume download in a terminal-styled card -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — Nikunj Goyal</title>
+  <meta name="description" content="Get in touch with Nikunj Goyal — email, LinkedIn, GitHub, and resume.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@300..600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t);</script>
+  <style>
+    .export {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--ink-2)
+    }
+
+    .export .bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--faint);
+      letter-spacing: .1em;
+    }
+
+    .export .bar .d {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%
+    }
+
+    .export .body {
+      padding: 46px 38px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+    }
+
+    @media (max-width: 720px) {
+      .export .body {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .export h2 {
+      font-family: var(--font-display);
+      font-weight: 360;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    .export h2 em {
+      font-style: italic;
+      color: var(--accent)
+    }
+
+    .export p {
+      color: var(--muted);
+      margin-top: 14px;
+      max-width: 36ch
+    }
+
+    .export .ports {
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .export .ports a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 13px 16px;
+      color: var(--muted);
+      transition: .25s;
+      min-width: 220px;
+    }
+
+    .export .ports a:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      transform: translateX(3px)
+    }
+
+    .export .ports a .ar {
+      color: var(--accent)
+    }
+  </style>
+</head>
+
+<body>
+
+  <svg class="grain">
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#n)" />
+  </svg>
+
+  <nav>
+    <a href="index.html" class="brand"><b>&#9679;</b> Nikunj&nbsp;Goyal<span style="color:var(--faint)"></span></a>
+    <div class="nav-right">
+      <div class="links">
+        <a href="journey.html" target="_blank">Journey</a>
+        <a href="craft.html" target="_blank">Craft</a>
+        <a href="offclock.html" target="_blank">Off-Clock</a>
+        <a href="contact.html" style="color:var(--text)">Contact</a>
+      </div>
+      <button class="theme-toggle" id="themeToggle">light</button>
+    </div>
+  </nav>
+
+  <section style="padding-top:120px">
+    <div class="wrap reveal">
+      <div class="export">
+        <div class="bar">
+          <span class="d" style="background:var(--accent)"></span>
+          <span class="d" style="background:var(--lime)"></span>
+          <span class="d" style="background:var(--handle)"></span>
+          &nbsp;export · let's-connect.svg
+        </div>
+        <div class="body">
+          <div>
+            <h1
+              style="font-family:var(--font-display);font-weight:360;font-size:clamp(30px,5vw,52px);line-height:1;letter-spacing:-.02em">
+              Let's draw the <em style="font-style:italic;color:var(--accent)">next</em> control point together.</h1>
+            <p>Open to good problems, interesting people, and the occasional ride.</p>
+          </div>
+          <div class="ports">
+            <a href="mailto:nkgoyal272@gmail.com">email <span class="ar">&#8599;</span></a>
+            <a href="https://linkedin.com/in/nikunj-goyal-1831b517a" target="_blank" rel="noopener noreferrer">linkedin
+              <span class="ar">&#8599;</span></a>
+            <a href="https://github.com/Nk272" target="_blank" rel="noopener noreferrer">github <span
+                class="ar">&#8599;</span></a>
+            <a href="#">resume.pdf <span class="ar">&#8600;</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="sig">— anchored, not fixed.</div>
+    <div class="fine">Nikunj Goyal · built 2026 · India</div>
+  </footer>
+
+  <script>
+    (function () {
+      var toggle = document.getElementById('themeToggle');
+      var root = document.documentElement;
+      UpdateToggleText();
+      toggle.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        UpdateToggleText();
+      });
+      function UpdateToggleText() {
+        toggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      }
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, { threshold: .18 });
+      document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+
+</html>
