@@ -15,7 +15,7 @@
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@300..600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script>var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t);</script>
+  <script>var t=localStorage.getItem('theme')||(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);</script>
   <style>
     /* ---- JOURNEY TIMELINE ---- */
     .journey-stage {
@@ -275,7 +275,7 @@
         <div class="milestones">
           <div class="ms">
             <div class="card">
-              <span class="yr">&#8776; 2019 — 2024 · P&#8320;</span>
+              <span class="yr">&#8776; 2018 — 2023 P&#8320;</span>
               <h3>IIT Roorkee</h3>
               <div class="where">Master in Applied Mathematics · 5 years</div>
               <p>Where the foundations were laid — five years of proofs, models, and the language of curves. Also found
@@ -289,7 +289,7 @@
           <div class="ms">
             <div class="node"></div>
             <div class="card">
-              <span class="yr">&#8776; 2024 — 2027 · P&#8321;</span>
+              <span class="yr">&#8776; 2023 — 2026 · P&#8321;</span>
               <h3>Adobe — Illustrator team</h3>
               <div class="where">Image processing · Bezier geometry · C++ · 3 years</div>
               <p>Turned theory into tools millions of designers touch daily. Worked deep in image processing and the
