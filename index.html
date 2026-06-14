@@ -2,290 +2,500 @@
 <!-- ABOUTME: Single-viewport layout with animated bezier life curve and light/dark theme toggle -->
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nikunj Goyal — Applied Maths, Curves & the Road</title>
-<meta name="description" content="Portfolio of Nikunj Goyal — Applied Mathematics from IIT Roorkee, Adobe Illustrator team, bezier curves and image processing.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@300..600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<script>var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);</script>
-<style>
-  html, body { height: 100%; overflow: hidden }
-  body { display: flex; flex-direction: column }
-
-  /* ---- INFO STRIP ---- */
-  .info-strip {
-    position: relative; z-index: 2;
-    display: flex; align-items: center; justify-content: center;
-    padding: 10px clamp(20px,4vw,44px);
-    background: transparent;
-    border-bottom: 1px solid var(--line);
-    flex-shrink: 0;
-  }
-  .info-strip .info-item {
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
-    color: var(--muted); padding: 0 22px;
-    border-right: 1px solid var(--line);
-  }
-  .info-strip .info-item:last-child { border-right: none }
-  .info-strip .info-item b { color: var(--accent); font-weight: 500 }
-  .info-strip .info-item i { color: var(--handle); font-style: normal }
-
-  /* ---- MAIN CONTENT ---- */
-  .main-content {
-    position: relative; z-index: 2;
-    flex: 1; display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    align-items: center;
-    padding: 0 clamp(28px,5vw,60px);
-    min-height: 0;
-  }
-
-  /* ---- QUOTE ---- */
-  .quote-side {
-    display: flex; flex-direction: column; justify-content: center;
-    padding-right: 48px;
-  }
-  .quote-mark {
-    font-family: var(--font-display); font-size: 72px; line-height: 1;
-    color: var(--accent); opacity: .35;
-  }
-  h1.quote-text {
-    font-family: var(--font-display); font-style: italic;
-    font-size: clamp(22px,3vw,38px); font-weight: 340;
-    line-height: 1.25; letter-spacing: -.01em;
-    margin-top: -10px;
-  }
-  .quote-attr {
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em;
-    color: var(--faint); margin-top: 24px; text-transform: uppercase;
-  }
-  .quote-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px }
-  .qt {
-    font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
-    color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px;
-  }
-  .qt.hot { color: var(--accent); border-color: rgba(255,90,60,.35) }
-  .quote-cta { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap }
-
-  /* ---- CURVE STAGE ---- */
-  .curve-side {
-    position: relative; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px 0;
-  }
-  .stage {
-    position: relative; width: 100%; height: 78%; max-height: 480px;
-    border: 1px solid var(--line); border-radius: 16px;
-    background: linear-gradient(160deg, var(--ink-2), var(--ink));
-    overflow: hidden;
-    box-shadow: 0 40px 80px -40px rgba(0,0,0,.8);
-  }
-  [data-theme="light"] .stage { box-shadow: 0 40px 80px -40px rgba(0,0,0,.12) }
-  .stage .hud {
-    position: absolute; top: 12px; left: 14px; z-index: 3;
-    font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--faint);
-  }
-  .stage .hud2 {
-    position: absolute; bottom: 12px; right: 14px; z-index: 3; text-align: right;
-    font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; color: var(--faint);
-  }
-  .stage svg { position: absolute; inset: 0; width: 100%; height: 100% }
-
-  /* milestone SVG text */
-  .ms-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em; fill: var(--text); opacity: .8 }
-  .ms-year  { font-family: var(--font-mono); font-size: 8px; letter-spacing: .1em; fill: var(--handle) }
-  .ms-dot   { fill: var(--accent) }
-  .ms-ring  { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: .2 }
-
-  @media (max-width: 880px) {
-    html, body { height: auto; overflow: auto }
-    .main-content { grid-template-columns: 1fr; padding: 30px clamp(20px,4vw,44px) 40px }
-    .quote-side { padding-right: 0 }
-    .curve-side { height: 60vw; min-height: 300px }
-  }
-  @media (max-width: 480px) {
-    .info-strip { flex-wrap: wrap; gap: 4px }
-    .info-strip .info-item { border-right: none; padding: 3px 10px }
-  }
-
-  .footer-sig {
-    position: fixed; bottom: 16px; left: 0; right: 0; z-index: 2;
-    text-align: center; pointer-events: none;
-  }
-  .footer-sig span {
-    font-family: var(--font-display); font-style: italic; font-size: 14px;
-    color: var(--faint); opacity: .6;
-  }
-</style>
-</head>
-<body>
-
-<svg class="grain"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
-
-<nav id="nav">
-  <a href="index.html" class="brand"><b>&#9679;</b> Nikunj&nbsp;Goyal<span style="color:var(--faint)"></span></a>
-  <div class="nav-right">
-    <div class="links">
-      <a href="journey.html" target="_blank">Journey</a>
-      <a href="craft.html" target="_blank">Craft</a>
-      <a href="offclock.html" target="_blank">Off-Clock</a>
-      <a href="contact.html" target="_blank">Contact</a>
-    </div>
-    <button class="theme-toggle" id="themeToggle">light</button>
-  </div>
-</nav>
-
-<div class="info-strip">
-  <span class="info-item"><b>&#9673;</b> India · 28.97°N, 77.65°E</span>
-  <span class="info-item"><b>24</b> yrs · <i>turns 25 this Oct</i></span>
-  <span class="info-item">Adobe · Illustrator Team</span>
-</div>
-
-<div class="main-content">
-  <div class="quote-side">
-    <div class="quote-mark">"</div>
-    <h1 class="quote-text">Drew my life as a curve and marked the places I've called home.</h1>
-    <div class="quote-attr">— Nikunj Goyal</div>
-    <div class="quote-tags">
-      <span class="qt">applied maths</span>
-      <span class="qt hot">IIT Roorkee</span>
-      <span class="qt">bezier curves</span>
-    </div>
-    <div class="quote-cta">
-      <a class="btn primary" href="journey.html" target="_blank">trace the curve &#8594;</a>
-      <a class="btn ghost" href="contact.html" target="_blank">get in touch</a>
-    </div>
-  </div>
-
-  <div class="curve-side">
-    <div class="stage" id="stage">
-      <div class="hud">LIFE CURVE</div>
-      <div class="hud2">P(t) = (1-t)&#179;P&#8320; + 3(1-t)&#178;tP&#8321;<br>+ 3(1-t)t&#178;P&#8322; + t&#179;P&#8323;</div>
-      <svg viewBox="0 0 600 410" id="bez" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="curveGrad" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0" stop-color="var(--handle)"/>
-            <stop offset="1" stop-color="var(--accent)"/>
-          </linearGradient>
-        </defs>
-        <path id="curveShadow" fill="none" stroke="url(#curveGrad)" stroke-width="8" stroke-linecap="round" opacity=".12"/>
-        <path id="curve" fill="none" stroke="url(#curveGrad)" stroke-width="2.5" stroke-linecap="round"/>
-        <g id="milestones"></g>
-      </svg>
-    </div>
-  </div>
-</div>
-
-<div class="footer-sig"><span>— anchored, not fixed.</span></div>
-
-<script>
-(function(){
-  var SVG_NS = 'http://www.w3.org/2000/svg';
-
-  // ---- theme toggle ----
-  var toggle = document.getElementById('themeToggle');
-  var root = document.documentElement;
-  UpdateToggleText();
-  toggle.addEventListener('click', function(){
-    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    root.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    UpdateToggleText();
-  });
-  function UpdateToggleText(){
-    toggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  }
-
-  // ---- bezier curve with milestones ----
-  var curvePath = document.getElementById('curve');
-  var curveShadow = document.getElementById('curveShadow');
-  var msGroup = document.getElementById('milestones');
-
-  var P0 = {x:70, y:340}, P3 = {x:530, y:70};
-  var base1 = {x:180, y:340}, base2 = {x:420, y:80};
-  var C1 = {x:base1.x, y:base1.y}, C2 = {x:base2.x, y:base2.y};
-
-  var milestoneData = [
-    {t:0.00, label:'IIT Roorkee',  year:'2019', above:true},
-    {t:0.35, label:'Adobe',        year:'2024', above:false},
-    {t:0.58, label:'KubeCon SLC',  year:'2024', above:true},
-    {t:0.80, label:'KubeCon ATL',  year:'2025', above:false},
-    {t:1.00, label:'Next...',      year:'',     above:true}
-  ];
-
-  milestoneData.forEach(function(ms){
-    var g = document.createElementNS(SVG_NS, 'g');
-
-    var ring = document.createElementNS(SVG_NS, 'circle');
-    ring.setAttribute('r', '12');
-    ring.setAttribute('class', 'ms-ring');
-    g.appendChild(ring);
-
-    var dot = document.createElementNS(SVG_NS, 'circle');
-    dot.setAttribute('r', '4');
-    dot.setAttribute('class', 'ms-dot');
-    g.appendChild(dot);
-
-    var labelDy = ms.above ? -14 : 20;
-    var yearDy  = ms.above ? -26 : 32;
-
-    var label = document.createElementNS(SVG_NS, 'text');
-    label.setAttribute('class', 'ms-label');
-    label.setAttribute('dy', labelDy);
-    label.setAttribute('text-anchor', 'middle');
-    label.textContent = ms.label;
-    g.appendChild(label);
-
-    if(ms.year){
-      var year = document.createElementNS(SVG_NS, 'text');
-      year.setAttribute('class', 'ms-year');
-      year.setAttribute('dy', yearDy);
-      year.setAttribute('text-anchor', 'middle');
-      year.textContent = ms.year;
-      g.appendChild(year);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nikunj Goyal</title>
+  <meta name="description" content="Portfolio of Nikunj Goyal">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@300..600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>var t = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark'); document.documentElement.setAttribute('data-theme', t);</script>
+  <style>
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
     }
 
-    ms.el = g;
-    msGroup.appendChild(g);
-  });
+    body {
+      display: flex;
+      flex-direction: column
+    }
 
-  function BezierPoint(t){
-    var u = 1 - t;
-    return {
-      x: u*u*u*P0.x + 3*u*u*t*C1.x + 3*u*t*t*C2.x + t*t*t*P3.x,
-      y: u*u*u*P0.y + 3*u*u*t*C1.y + 3*u*t*t*C2.y + t*t*t*P3.y
-    };
-  }
+    /* ---- INFO STRIP ---- */
+    .info-strip {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px clamp(20px, 4vw, 44px);
+      background: transparent;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
 
-  function Render(){
-    var d = 'M'+P0.x+' '+P0.y+' C '+C1.x+' '+C1.y+', '+C2.x+' '+C2.y+', '+P3.x+' '+P3.y;
-    curvePath.setAttribute('d', d);
-    curveShadow.setAttribute('d', d);
+    .info-strip .info-item {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .1em;
+      color: var(--muted);
+      padding: 0 22px;
+      border-right: 1px solid var(--line);
+    }
 
-    milestoneData.forEach(function(ms){
-      var p = BezierPoint(ms.t);
-      ms.el.setAttribute('transform', 'translate('+p.x+','+p.y+')');
-    });
-  }
+    .info-strip .info-item:last-child {
+      border-right: none
+    }
 
-  var time = 0;
-  function Loop(){
-    time += 0.008;
-    C1.x = base1.x + Math.sin(time) * 30;
-    C1.y = base1.y + Math.cos(time * 0.8) * 20;
-    C2.x = base2.x + Math.cos(time * 1.1) * 30;
-    C2.y = base2.y + Math.sin(time) * 20;
-    Render();
-    requestAnimationFrame(Loop);
-  }
+    .info-strip .info-item b {
+      color: var(--accent);
+      font-weight: 500
+    }
 
-  Render();
-  Loop();
-})();
-</script>
+    .info-strip .info-item i {
+      color: var(--handle);
+      font-style: normal
+    }
+
+    /* ---- MAIN CONTENT ---- */
+    .main-content {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      align-items: center;
+      padding: 0 clamp(28px, 5vw, 60px);
+      min-height: 0;
+    }
+
+    /* ---- QUOTE ---- */
+    .quote-side {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-right: 48px;
+    }
+
+    .quote-mark {
+      font-family: var(--font-display);
+      font-size: 72px;
+      line-height: 1;
+      color: var(--accent);
+      opacity: .35;
+    }
+
+    h1.quote-text {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(22px, 3vw, 38px);
+      font-weight: 340;
+      line-height: 1.25;
+      letter-spacing: -.01em;
+      margin-top: -10px;
+    }
+
+    .quote-attr {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: .14em;
+      color: var(--faint);
+      margin-top: 24px;
+      text-transform: uppercase;
+    }
+
+    .quote-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px
+    }
+
+    .qt {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    .qt.hot {
+      color: var(--accent);
+      border-color: rgba(255, 90, 60, .35)
+    }
+
+    .quote-cta {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+      flex-wrap: wrap
+    }
+
+    /* ---- CURVE STAGE ---- */
+    .curve-side {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 78%;
+      max-height: 480px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(160deg, var(--ink-2), var(--ink));
+      overflow: hidden;
+      box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .8);
+    }
+
+    [data-theme="light"] .stage {
+      box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .12)
+    }
+
+    .stage .hud {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      z-index: 3;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--faint);
+    }
+
+    .stage .hud2 {
+      position: absolute;
+      bottom: 12px;
+      right: 14px;
+      z-index: 3;
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--faint);
+    }
+
+    .stage svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%
+    }
+
+    /* milestone SVG text */
+    .ms-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: .06em;
+      fill: var(--text);
+      opacity: .8
+    }
+
+    .ms-year {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: .1em;
+      fill: var(--handle)
+    }
+
+    .ms-dot {
+      fill: var(--accent)
+    }
+
+    .ms-ring {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 1.5;
+      opacity: .2
+    }
+
+    @media (max-width: 880px) {
+
+      html,
+      body {
+        height: auto;
+        overflow: auto
+      }
+
+      .main-content {
+        grid-template-columns: 1fr;
+        padding: 30px clamp(20px, 4vw, 44px) 40px
+      }
+
+      .quote-side {
+        padding-right: 0
+      }
+
+      .curve-side {
+        height: 60vw;
+        min-height: 300px
+      }
+    }
+
+    @media (max-width: 480px) {
+      .info-strip {
+        flex-wrap: wrap;
+        gap: 4px
+      }
+
+      .info-strip .info-item {
+        border-right: none;
+        padding: 3px 10px
+      }
+    }
+
+    .footer-sig {
+      position: fixed;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      z-index: 2;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .footer-sig span {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 14px;
+      color: var(--faint);
+      opacity: .6;
+    }
+  </style>
+</head>
+
+<body>
+
+  <svg class="grain">
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#n)" />
+  </svg>
+
+  <nav id="nav">
+    <a href="index.html" class="brand"><b>&#9679;</b> Nikunj&nbsp;Goyal<span style="color:var(--faint)"></span></a>
+    <div class="nav-right">
+      <div class="links">
+        <a href="journey.html" target="_blank">Journey</a>
+        <a href="craft.html" target="_blank">Craft</a>
+        <a href="offclock.html" target="_blank">Off-Clock</a>
+        <a href="contact.html" target="_blank">Contact</a>
+      </div>
+      <button class="theme-toggle" id="themeToggle">light</button>
+    </div>
+  </nav>
+
+  <div class="info-strip">
+    <span class="info-item"><b>&#9673;</b> India · 28.97°N, 77.65°E</span>
+    <span class="info-item" id="ageDisplay"></span>
+    <span class="info-item">Adobe · MTS-2</span>
+  </div>
+
+  <div class="main-content">
+    <div class="quote-side">
+      <div class="quote-mark">"</div>
+      <h1 class="quote-text">One often meets his destiny on the road he takes to avoid it.</h1>
+      <div class="quote-attr">— Master Oogway</div>
+      <div class="quote-tags">
+        <span class="qt">applied maths</span>
+        <span class="qt hot">IIT Roorkee</span>
+        <span class="qt">bezier curves</span>
+      </div>
+      <div class="quote-cta">
+        <a class="btn primary" href="journey.html" target="_blank">trace the curve &#8594;</a>
+        <a class="btn ghost" href="contact.html" target="_blank">get in touch</a>
+      </div>
+    </div>
+
+    <div class="curve-side">
+      <div class="stage" id="stage">
+        <div class="hud">LIFE CURVE</div>
+        <div class="hud2">P(t) = (1-t)&#179;P&#8320; + 3(1-t)&#178;tP&#8321;<br>+ 3(1-t)t&#178;P&#8322; +
+          t&#179;P&#8323;</div>
+        <svg viewBox="0 0 600 410" id="bez" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="curveGrad" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" stop-color="var(--handle)" />
+              <stop offset="1" stop-color="var(--accent)" />
+            </linearGradient>
+          </defs>
+          <path id="curveShadow" fill="none" stroke="url(#curveGrad)" stroke-width="8" stroke-linecap="round"
+            opacity=".12" />
+          <path id="curve" fill="none" stroke="url(#curveGrad)" stroke-width="2.5" stroke-linecap="round" />
+          <g id="milestones"></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-sig"><span>— anchored, not fixed.</span></div>
+
+  <script>
+    (function () {
+      var SVG_NS = 'http://www.w3.org/2000/svg';
+
+      // ---- theme toggle ----
+      var toggle = document.getElementById('themeToggle');
+      var root = document.documentElement;
+      UpdateToggleText();
+      toggle.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        UpdateToggleText();
+      });
+      function UpdateToggleText() {
+        toggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      }
+
+      // ---- live age from 8 Oct 2001 ----
+      var BIRTH = new Date(2001, 9, 8);
+      var ageEl = document.getElementById('ageDisplay');
+      function CalcAge() {
+        var now = new Date();
+        var y = now.getFullYear() - BIRTH.getFullYear();
+        var m = now.getMonth() - BIRTH.getMonth();
+        var d = now.getDate() - BIRTH.getDate();
+        if (d < 0) { m--; d += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+        if (m < 0) { y--; m += 12; }
+        ageEl.innerHTML = '<b>' + y + '</b>y <b>' + m + '</b>m <b>' + d + '</b>d';
+      }
+      CalcAge();
+      setInterval(CalcAge, 1000);
+
+      // ---- interactive spline curve with milestones ----
+      var svgEl = document.getElementById('bez');
+      var curvePath = document.getElementById('curve');
+      var curveShadow = document.getElementById('curveShadow');
+      var msGroup = document.getElementById('milestones');
+
+      var milestoneData = [
+        {label:'Highschool',       bx:50,  by:340, x:50,  y:340, above:true},
+        {label:'JEE',              bx:135, by:200, x:135, y:200, above:false},
+        {label:'IIT Roorkee',      bx:230, by:300, x:230, y:300, above:true},
+        {label:'Adobe Illustrator',bx:320, by:130, x:320, y:130, above:false},
+        {label:'CNCF US',          bx:410, by:220, x:410, y:220, above:true},
+        {label:'Amazon',           bx:490, by:90,  x:490, y:90,  above:false},
+        {label:'Next...',          bx:560, by:55,  x:560, y:55,  above:true}
+      ];
+
+      var dragging = null;
+
+      milestoneData.forEach(function(ms){
+        var g = document.createElementNS(SVG_NS, 'g');
+        g.style.cursor = 'grab';
+
+        var hit = document.createElementNS(SVG_NS, 'circle');
+        hit.setAttribute('r', '22');
+        hit.setAttribute('fill', 'transparent');
+        g.appendChild(hit);
+
+        var ring = document.createElementNS(SVG_NS, 'circle');
+        ring.setAttribute('r', '12');
+        ring.setAttribute('class', 'ms-ring');
+        g.appendChild(ring);
+
+        var dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('r', '4');
+        dot.setAttribute('class', 'ms-dot');
+        g.appendChild(dot);
+
+        var label = document.createElementNS(SVG_NS, 'text');
+        label.setAttribute('class', 'ms-label');
+        label.setAttribute('dy', ms.above ? -14 : 20);
+        label.setAttribute('text-anchor', 'middle');
+        label.textContent = ms.label;
+        g.appendChild(label);
+
+        g.addEventListener('pointerdown', function(e){
+          e.preventDefault();
+          dragging = ms;
+          g.style.cursor = 'grabbing';
+          try { g.setPointerCapture(e.pointerId); } catch(_) {}
+        });
+
+        ms.el = g;
+        ms.gEl = g;
+        msGroup.appendChild(g);
+      });
+
+      svgEl.addEventListener('pointermove', function(e){
+        if(!dragging) return;
+        var r = svgEl.getBoundingClientRect();
+        var x = (e.clientX - r.left) / r.width * 600;
+        var y = (e.clientY - r.top) / r.height * 410;
+        dragging.x = Math.max(20, Math.min(580, x));
+        dragging.y = Math.max(20, Math.min(390, y));
+        Render();
+      });
+
+      svgEl.addEventListener('pointerup', function(){
+        if(dragging){
+          dragging.bx = dragging.x;
+          dragging.by = dragging.y;
+          dragging.gEl.style.cursor = 'grab';
+          dragging = null;
+        }
+      });
+
+      function BuildSplinePath(pts){
+        var n = pts.length;
+        if(n < 2) return '';
+        var d = 'M' + pts[0].x + ' ' + pts[0].y;
+        for(var i = 0; i < n - 1; i++){
+          var p0 = pts[Math.max(0, i-1)];
+          var p1 = pts[i];
+          var p2 = pts[i+1];
+          var p3 = pts[Math.min(n-1, i+2)];
+          var c1x = p1.x + (p2.x - p0.x) / 6;
+          var c1y = p1.y + (p2.y - p0.y) / 6;
+          var c2x = p2.x - (p3.x - p1.x) / 6;
+          var c2y = p2.y - (p3.y - p1.y) / 6;
+          d += ' C '+c1x+' '+c1y+', '+c2x+' '+c2y+', '+p2.x+' '+p2.y;
+        }
+        return d;
+      }
+
+      function Render(){
+        var d = BuildSplinePath(milestoneData);
+        curvePath.setAttribute('d', d);
+        curveShadow.setAttribute('d', d);
+        milestoneData.forEach(function(ms){
+          ms.el.setAttribute('transform', 'translate('+ms.x+','+ms.y+')');
+        });
+      }
+
+      var time = 0;
+      function Loop(){
+        time += 0.006;
+        milestoneData.forEach(function(ms, i){
+          if(ms === dragging) return;
+          var phase = i * 1.3;
+          ms.x = ms.bx + Math.sin(time + phase) * 12;
+          ms.y = ms.by + Math.cos(time * 0.7 + phase) * 8;
+        });
+        Render();
+        requestAnimationFrame(Loop);
+      }
+
+      Render();
+      Loop();
+    })();
+  </script>
 </body>
+
 </html>
