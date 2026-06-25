@@ -311,11 +311,6 @@
       <div class="quote-mark">"</div>
       <h1 class="quote-text">One often meets his destiny on the road he takes to avoid it.</h1>
       <div class="quote-attr">— Master Oogway</div>
-      <div class="quote-tags">
-        <span class="qt">applied maths</span>
-        <span class="qt hot">IIT Roorkee</span>
-        <span class="qt">bezier curves</span>
-      </div>
       <div class="quote-cta">
         <a class="btn primary" href="journey.html" target="_blank">trace the curve &#8594;</a>
         <a class="btn ghost" href="contact.html" target="_blank">get in touch</a>
@@ -325,8 +320,7 @@
     <div class="curve-side">
       <div class="stage" id="stage">
         <div class="hud">LIFE CURVE</div>
-        <div class="hud2">P(t) = (1-t)&#179;P&#8320; + 3(1-t)&#178;tP&#8321;<br>+ 3(1-t)t&#178;P&#8322; +
-          t&#179;P&#8323;</div>
+
         <svg viewBox="0 0 600 410" id="bez" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="curveGrad" x1="0" y1="1" x2="1" y2="0">
@@ -378,32 +372,53 @@
       CalcAge();
       setInterval(CalcAge, 1000);
 
-      // ---- interactive spline curve with milestones ----
+      // ---- sin(x)*e^x curve with milestones ----
       var svgEl = document.getElementById('bez');
       var curvePath = document.getElementById('curve');
       var curveShadow = document.getElementById('curveShadow');
       var msGroup = document.getElementById('milestones');
 
+      var PAD = 40;
+      var W = 600;
+      var H = 410;
+      var STEPS = 200;
+
+      // x range chosen so the curve fits nicely
+      var X_MIN = -1.0;
+      var X_MAX = 2.2;
+
+      function CurveFunc(x) {
+        return Math.sin(x) * Math.exp(x);
+      }
+
+      // precompute y range for normalization
+      var yMin = Infinity, yMax = -Infinity;
+      for (var i = 0; i <= STEPS; i++) {
+        var xv = X_MIN + (X_MAX - X_MIN) * i / STEPS;
+        var yv = CurveFunc(xv);
+        if (yv < yMin) yMin = yv;
+        if (yv > yMax) yMax = yv;
+      }
+
+      function MapToSvg(xv, yv) {
+        var sx = PAD + (xv - X_MIN) / (X_MAX - X_MIN) * (W - 2 * PAD);
+        var sy = (H - PAD) - (yv - yMin) / (yMax - yMin) * (H - 2 * PAD);
+        return { x: sx, y: sy };
+      }
+
+      // milestones placed at fixed x positions along the curve
       var milestoneData = [
-        {label:'Highschool',       bx:50,  by:340, x:50,  y:340, above:true},
-        {label:'JEE',              bx:135, by:200, x:135, y:200, above:false},
-        {label:'IIT Roorkee',      bx:230, by:300, x:230, y:300, above:true},
-        {label:'Adobe Illustrator',bx:320, by:130, x:320, y:130, above:false},
-        {label:'CNCF US',          bx:410, by:220, x:410, y:220, above:true},
-        {label:'Amazon',           bx:490, by:90,  x:490, y:90,  above:false},
-        {label:'Next...',          bx:560, by:55,  x:560, y:55,  above:true}
+        { label: 'Highschool', t: 0.0, above: true },
+        { label: 'JEE', t: 0.18, above: false },
+        { label: 'IIT Roorkee', t: 0.35, above: true },
+        { label: 'Adobe', t: 0.52, above: false },
+        { label: 'CNCF US', t: 0.68, above: true },
+        { label: 'Amazon', t: 0.84, above: false },
+        { label: 'Next...', t: 1.0, above: true }
       ];
 
-      var dragging = null;
-
-      milestoneData.forEach(function(ms){
+      milestoneData.forEach(function (ms) {
         var g = document.createElementNS(SVG_NS, 'g');
-        g.style.cursor = 'grab';
-
-        var hit = document.createElementNS(SVG_NS, 'circle');
-        hit.setAttribute('r', '22');
-        hit.setAttribute('fill', 'transparent');
-        g.appendChild(hit);
 
         var ring = document.createElementNS(SVG_NS, 'circle');
         ring.setAttribute('r', '12');
@@ -422,78 +437,45 @@
         label.textContent = ms.label;
         g.appendChild(label);
 
-        g.addEventListener('pointerdown', function(e){
-          e.preventDefault();
-          dragging = ms;
-          g.style.cursor = 'grabbing';
-          try { g.setPointerCapture(e.pointerId); } catch(_) {}
-        });
-
         ms.el = g;
-        ms.gEl = g;
         msGroup.appendChild(g);
       });
 
-      svgEl.addEventListener('pointermove', function(e){
-        if(!dragging) return;
-        var r = svgEl.getBoundingClientRect();
-        var x = (e.clientX - r.left) / r.width * 600;
-        var y = (e.clientY - r.top) / r.height * 410;
-        dragging.x = Math.max(20, Math.min(580, x));
-        dragging.y = Math.max(20, Math.min(390, y));
-        Render();
-      });
-
-      svgEl.addEventListener('pointerup', function(){
-        if(dragging){
-          dragging.bx = dragging.x;
-          dragging.by = dragging.y;
-          dragging.gEl.style.cursor = 'grab';
-          dragging = null;
-        }
-      });
-
-      function BuildSplinePath(pts){
-        var n = pts.length;
-        if(n < 2) return '';
-        var d = 'M' + pts[0].x + ' ' + pts[0].y;
-        for(var i = 0; i < n - 1; i++){
-          var p0 = pts[Math.max(0, i-1)];
-          var p1 = pts[i];
-          var p2 = pts[i+1];
-          var p3 = pts[Math.min(n-1, i+2)];
-          var c1x = p1.x + (p2.x - p0.x) / 6;
-          var c1y = p1.y + (p2.y - p0.y) / 6;
-          var c2x = p2.x - (p3.x - p1.x) / 6;
-          var c2y = p2.y - (p3.y - p1.y) / 6;
-          d += ' C '+c1x+' '+c1y+', '+c2x+' '+c2y+', '+p2.x+' '+p2.y;
+      function BuildCurvePath(phase) {
+        var d = '';
+        for (var i = 0; i <= STEPS; i++) {
+          var xv = X_MIN + (X_MAX - X_MIN) * i / STEPS;
+          var yv = CurveFunc(xv);
+          // subtle wave animation
+          yv += Math.sin(xv * 3 + phase) * 0.15;
+          var pt = MapToSvg(xv, yv);
+          d += (i === 0 ? 'M' : 'L') + pt.x.toFixed(2) + ' ' + pt.y.toFixed(2);
         }
         return d;
       }
 
-      function Render(){
-        var d = BuildSplinePath(milestoneData);
+      function Render(phase) {
+        var d = BuildCurvePath(phase);
         curvePath.setAttribute('d', d);
         curveShadow.setAttribute('d', d);
-        milestoneData.forEach(function(ms){
-          ms.el.setAttribute('transform', 'translate('+ms.x+','+ms.y+')');
+
+        milestoneData.forEach(function (ms) {
+          var xv = X_MIN + (X_MAX - X_MIN) * ms.t;
+          var yv = CurveFunc(xv);
+          yv += Math.sin(xv * 3 + phase) * 0.15;
+          var pt = MapToSvg(xv, yv);
+          ms.el.setAttribute('transform', 'translate(' + pt.x.toFixed(2) + ',' + pt.y.toFixed(2) + ')');
         });
       }
 
       var time = 0;
-      function Loop(){
-        time += 0.006;
-        milestoneData.forEach(function(ms, i){
-          if(ms === dragging) return;
-          var phase = i * 1.3;
-          ms.x = ms.bx + Math.sin(time + phase) * 12;
-          ms.y = ms.by + Math.cos(time * 0.7 + phase) * 8;
-        });
-        Render();
+      function Loop() {
+        time += 0.008;
+        Render(time);
         requestAnimationFrame(Loop);
       }
 
-      Render();
+      Render(0);
       Loop();
     })();
   </script>
