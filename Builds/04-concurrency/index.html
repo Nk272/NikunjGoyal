@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Concurrency Playground — Threads, Locks &amp; Deadlock, Visualized</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0E1220;
+    --surface: #161B2E;
+    --surface-2: #1E2540;
+    --line: #29314F;
+    --line-soft: #20273f;
+    --ink: #ECE7DA;
+    --ink-dim: #8C93AD;
+    --ink-faint: #5A6080;
+    --gold: #E8B24B;
+    --gold-soft: rgba(232, 178, 75, 0.14);
+    --buy: #38C6A0;
+    --sell: #E8675A;
+    --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --radius: 10px;
+  }
+
+  [data-theme="light"] {
+    --bg: #F4F1E8;
+    --surface: #FFFFFF;
+    --surface-2: #F1EDE1;
+    --line: #DCD6C6;
+    --line-soft: #E8E3D5;
+    --ink: #20242F;
+    --ink-dim: #5C6276;
+    --ink-faint: #9197A8;
+    --gold: #B47D1E;
+    --gold-soft: rgba(180, 125, 30, 0.14);
+    --buy: #1B9C77;
+    --sell: #CC4636;
+  }
+  @media (prefers-color-scheme: light) {
+    [data-theme="system"] {
+      --bg: #F4F1E8;
+      --surface: #FFFFFF;
+      --surface-2: #F1EDE1;
+      --line: #DCD6C6;
+      --line-soft: #E8E3D5;
+      --ink: #20242F;
+      --ink-dim: #5C6276;
+      --ink-faint: #9197A8;
+      --gold: #B47D1E;
+      --gold-soft: rgba(180, 125, 30, 0.14);
+      --buy: #1B9C77;
+      --sell: #CC4636;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, var(--gold-soft), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background .2s, color .2s;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 22px 56px; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .mark {
+    font-family: var(--display); font-weight: 700; letter-spacing: -0.02em;
+    font-size: 27px; line-height: 1; color: var(--ink);
+    display: inline-flex; align-items: baseline;
+  }
+  .mark .accent { color: var(--gold); }
+  .mark .dot { color: var(--gold); }
+  .tagline {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+    letter-spacing: 0.02em;
+  }
+  .tagline b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle {
+    margin-left: auto; align-self: center; display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    appearance: none; cursor: pointer; background: transparent; border: none;
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px;
+    padding: 5px 10px; border-radius: 6px; transition: background .15s, color .15s;
+  }
+  .theme-toggle button:hover { color: var(--ink); }
+  .theme-toggle button.active { background: var(--gold); color: #2a1f06; font-weight: 600; }
+
+  /* ---------- demo tabs ---------- */
+  .variants {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; margin-bottom: 22px;
+  }
+  .vtab {
+    appearance: none; cursor: pointer; text-align: left;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 10px 12px 11px;
+    color: var(--ink-dim); transition: border-color .15s, background .15s, color .15s, transform .1s;
+    display: flex; flex-direction: column; gap: 4px; min-height: 64px;
+  }
+  .vtab:hover { border-color: var(--ink-faint); color: var(--ink); }
+  .vtab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .vtab .roman {
+    font-family: var(--display); font-weight: 600; font-size: 13px;
+    letter-spacing: 0.06em; color: var(--ink-faint);
+  }
+  .vtab .vname {
+    font-family: var(--body); font-size: 13.5px; font-weight: 500; line-height: 1.2;
+  }
+  .vtab[aria-selected="true"] {
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border-color: var(--gold); color: var(--ink);
+  }
+  .vtab[aria-selected="true"] .roman { color: var(--gold); }
+
+  /* ---------- panels ---------- */
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .panel-h {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint);
+    padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+  }
+  .panel-b { padding: 16px; }
+
+  .problem { margin-bottom: 18px; }
+  #statement { margin: 0; color: var(--ink-dim); font-size: 14px; line-height: 1.65; }
+  #statement b { color: var(--ink); font-weight: 600; }
+  #statement code {
+    font-family: var(--mono); font-size: 12.5px; color: var(--gold);
+    background: var(--gold-soft); padding: 1px 5px; border-radius: 4px;
+  }
+
+  /* ---------- controls bar ---------- */
+  .control-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 14px 16px; margin-bottom: 18px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  .control-bar .spacer { flex: 1; }
+  .speed-badge {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .speed-badge .val { color: var(--gold); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    appearance: none; cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--ink); font-family: var(--body); font-size: 13.5px; font-weight: 500;
+    padding: 9px 14px; border-radius: 8px; transition: border-color .15s, background .15s, filter .15s;
+  }
+  .btn:hover { border-color: var(--gold); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.primary { background: var(--gold); color: #2a1f06; border-color: var(--gold); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* segmented toggle */
+  .seg {
+    display: inline-flex; gap: 2px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 3px;
+  }
+  .seg button {
+    appearance: none; cursor: pointer; background: transparent; border: none;
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px;
+    padding: 5px 11px; border-radius: 6px; transition: background .15s, color .15s;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .seg button:hover { color: var(--ink); }
+  .seg button.active { background: var(--gold); color: #2a1f06; font-weight: 600; }
+
+  /* ---------- stage ---------- */
+  .stage-card { margin-bottom: 18px; }
+  .stage-body { padding: 14px 16px 16px; position: relative; }
+  canvas.stage { display: block; width: 100%; height: auto; border-radius: 8px; }
+
+  /* ---------- sliders ---------- */
+  .ctrl { min-width: 180px; flex: 1 1 200px; }
+  .ctrl label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12.5px; color: var(--ink-dim); margin-bottom: 7px;
+  }
+  .ctrl label .val { font-family: var(--mono); color: var(--gold); font-size: 13px; }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: var(--line); border-radius: 4px; outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--gold); border: 2px solid var(--bg); cursor: pointer; transition: transform .1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; background: var(--gold);
+    border: 2px solid var(--bg); cursor: pointer;
+  }
+  input[type="range"]:focus-visible { box-shadow: 0 0 0 2px var(--gold); }
+
+  /* ---------- metrics ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .metric {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px;
+  }
+  .metric .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .metric .v { font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: -0.02em; line-height: 1; }
+  .metric.hl { border-color: rgba(232,178,75,0.4); background: linear-gradient(180deg, var(--gold-soft), var(--surface)); }
+  .metric.hl .v { color: var(--gold); }
+  .metric .v.good { color: var(--buy); }
+  .metric .v.bad { color: var(--sell); }
+  .metric .sub { font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); margin-top: 5px; }
+
+  /* ---------- explanation / log ---------- */
+  .info-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .note { font-size: 13.5px; color: var(--ink-dim); line-height: 1.65; }
+  .note p { margin: 0 0 11px; }
+  .note p:last-child { margin-bottom: 0; }
+  .note b { color: var(--ink); font-weight: 600; }
+  .note .tag {
+    font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 4px;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-dim);
+  }
+  .note .tag.good { color: var(--buy); border-color: var(--buy); }
+  .note .tag.bad { color: var(--sell); border-color: var(--sell); }
+
+  .log {
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.7;
+    background: var(--bg); border: 1px solid var(--line-soft); border-radius: 8px;
+    padding: 12px 14px; height: 240px; overflow-y: auto; color: var(--ink-dim);
+  }
+  .log .ts { color: var(--ink-faint); }
+  .log .t0 { color: var(--gold); }
+  .log .t1 { color: var(--buy); }
+  .log .warn { color: var(--sell); }
+  .log .ok { color: var(--buy); }
+  .log div { white-space: pre-wrap; word-break: break-word; }
+
+  footer { margin-top: 30px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-align: center; line-height: 1.7; }
+
+  @media (max-width: 760px) {
+    .variants { grid-template-columns: repeat(2, 1fr); }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .info-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .control-bar { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark">Nikunj<span class="accent">Goyal</span><span class="dot">.</span></div>
+    <div class="tagline">Concurrency Playground · race conditions, locks &amp; deadlock — <b>cooperatively scheduled in your browser</b></div>
+    <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+      <button data-theme-val="system">System</button>
+      <button data-theme-val="light">Light</button>
+      <button data-theme-val="dark">Dark</button>
+    </div>
+  </header>
+
+  <div class="variants" role="tablist" aria-label="Concurrency demo"></div>
+
+  <section class="panel problem">
+    <div class="panel-h">Concept · <span id="p-lc">Race conditions</span></div>
+    <div class="panel-b"><p id="statement"></p></div>
+  </section>
+
+  <!-- control bar -->
+  <div class="control-bar" id="control-bar">
+    <button class="btn primary" id="btn-play">▶ Play</button>
+    <button class="btn" id="btn-step">⏭ Step</button>
+    <button class="btn" id="btn-reset">↺ Reset</button>
+    <div id="mode-slot"></div>
+    <div class="spacer"></div>
+    <div class="ctrl" id="speed-slot" style="max-width:220px;">
+      <label for="speed">Scheduler tick<span class="val" id="speed-val">8×</span></label>
+      <input type="range" id="speed" min="1" max="20" value="8" />
+    </div>
+  </div>
+
+  <!-- demo-specific sliders -->
+  <div id="param-slot"></div>
+
+  <!-- canvas stage -->
+  <section class="panel stage-card">
+    <div class="panel-h" id="stage-h">Visualization</div>
+    <div class="stage-body">
+      <canvas class="stage" id="stage" width="900" height="380"></canvas>
+    </div>
+  </section>
+
+  <!-- metrics -->
+  <section class="metrics" id="metrics"></section>
+
+  <!-- explanation + event log -->
+  <div class="info-grid">
+    <section class="panel">
+      <div class="panel-h">What's happening</div>
+      <div class="panel-b"><div class="note" id="note"></div></div>
+    </section>
+    <section class="panel">
+      <div class="panel-h">Event log</div>
+      <div class="panel-b" style="padding:10px;"><div class="log" id="log"></div></div>
+    </section>
+  </div>
+
+  <footer>
+    Single-file static app · no real OS threads — each "thread" is a coroutine advanced one instruction per scheduler tick,<br/>
+    so interleavings (and the bugs they cause) are <b>deterministic, visible, and steppable</b>.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+ * CONCURRENCY PLAYGROUND
+ * Cooperative scheduler: every "thread" is a generator that yields after
+ * each atomic step. The scheduler picks which thread advances per tick,
+ * so interleavings — and the bugs they cause — are explicit and steppable.
+ * ===================================================================== */
+
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+
+/* canvas + theme-aware colors */
+const cv = $("stage");
+const ctx = cv.getContext("2d");
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function COL(){
+  return {
+    bg: css("--bg"), surf: css("--surface"), surf2: css("--surface-2"),
+    line: css("--line"), ink: css("--ink"), dim: css("--ink-dim"),
+    faint: css("--ink-faint"), gold: css("--gold"), buy: css("--buy"), sell: css("--sell")
+  };
+}
+const W = cv.width, H = cv.height;
+
+/* ---------- shared runtime state ---------- */
+const state = {
+  demo: null,
+  running: false,
+  tickRate: 8,          // scheduler ticks per second-ish (scaled)
+  rafId: null,
+  acc: 0,
+  lastT: 0,
+};
+
+/* ---------- event log ---------- */
+function logClear(){ $("log").innerHTML = ""; }
+function logMsg(html, cls){
+  const el = $("log");
+  const line = document.createElement("div");
+  line.innerHTML = html;
+  if (cls) line.classList.add(cls);
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+  // cap
+  while (el.children.length > 400) el.removeChild(el.firstChild);
+}
+
+/* =====================================================================
+ * DEMO 1 — RACE CONDITIONS
+ * Two threads run `tmp = counter; tmp = tmp+1; counter = tmp` 
+ * (read-modify-write). Without a lock, interleavings drop updates.
+ * With a lock, the critical section is atomic.
+ * ===================================================================== */
+const RaceDemo = {
+  id: "race", roman: "I", name: "Race conditions", lc: "Race conditions",
+  statement: `Two threads each run a loop of <b>N</b> increments on a shared <code>counter</code>. The catch: <code>counter++</code> is not atomic — it is really <code>tmp = counter; tmp = tmp + 1; counter = tmp</code>. If the scheduler interleaves those three steps between threads, an increment can be <b>silently lost</b>. Run it <span style="color:var(--sell)">without a lock</span> and watch the final total fall short of <code>2N</code>; switch the lock <span style="color:var(--buy)">on</span> to make the read-modify-write a single atomic critical section.`,
+  note: `<p>Each thread executes <b>read → add → write</b> as three separate steps. A lost update happens when thread B reads <code>counter</code> <i>before</i> thread A has written its result back — both compute the same new value, so one increment vanishes.</p>
+  <p><span class="tag bad">no lock</span> interleavings drop updates → final &lt; 2N.<br/><span class="tag good">lock</span> a thread holding the mutex runs its whole RMW before yielding the critical section.</p>
+  <p>Try <b>Step</b> to force a worst-case interleaving by hand.</p>`,
+  mode: "nolock",        // "nolock" | "lock"
+  N: 12,                 // increments per thread
+  params: [
+    { key: "N", label: "Increments / thread", min: 4, max: 30, val: 12, fmt: v=>v }
+  ],
+
+  reset(){
+    this.counter = 0;
+    this.lockHeld = -1;     // which thread holds lock, -1 = free
+    this.threads = [0,1].map(tid => ({
+      tid, pc: 0, tmp: 0, done: 0, total: this.N, reg: null,
+      waiting: false, color: tid===0 ? "gold":"buy"
+    }));
+    this.finished = false;
+    this.anim = { flash: 0, writer: -1 };
+    logClear();
+    logMsg(`<span class="ts">init</span> counter=0 · lock=${this.mode==="lock"?"ENABLED":"disabled"} · target=2×${this.N}=${2*this.N}`, this.mode==="lock"?"ok":"warn");
+  },
+
+  // advance ONE atomic step of the scheduler. returns false when all done.
+  step(rng){
+    if (this.finished) return false;
+    // choose a runnable thread (not blocked on lock)
+    const runnable = this.threads.filter(t => t.done < t.total && !t.blocked);
+    if (runnable.length === 0){
+      // maybe everyone done?
+      if (this.threads.every(t => t.done >= t.total)){ this.finish(); return false; }
+      // all blocked (shouldn't happen with 1 lock) -> pick anyone waiting
+      return true;
+    }
+    const t = runnable[Math.floor(rng()*runnable.length)];
+    this.exec(t);
+    if (this.threads.every(x => x.done >= x.total)) this.finish();
+    return !this.finished;
+  },
+
+  exec(t){
+    const T = `<span class="t${t.tid}">T${t.tid}</span>`;
+    if (this.mode === "lock"){
+      // PC: 0 acquire, 1 read, 2 add, 3 write+release
+      if (t.pc === 0){
+        if (this.lockHeld === -1){ this.lockHeld = t.tid; t.blocked=false;
+          logMsg(`<span class="ts">↪</span> ${T} acquire() — lock held by T${t.tid}`); t.pc=1;
+        } else { t.blocked = true; logMsg(`<span class="ts">⏸</span> ${T} blocked on lock (held by T${this.lockHeld})`,"warn"); }
+        return;
+      }
+      if (t.pc === 1){ t.tmp = this.counter; logMsg(`<span class="ts">·</span> ${T} read counter → ${t.tmp}`); t.pc=2; return; }
+      if (t.pc === 2){ t.tmp = t.tmp + 1; logMsg(`<span class="ts">·</span> ${T} add → ${t.tmp}`); t.pc=3; return; }
+      if (t.pc === 3){
+        this.counter = t.tmp; this.anim.writer=t.tid; this.anim.flash=1;
+        logMsg(`<span class="ts">·</span> ${T} write counter = ${t.tmp} · release()`,"ok");
+        this.lockHeld = -1; t.done++; t.pc=0;
+        // unblock waiters
+        this.threads.forEach(x=>{ if(x.blocked) x.blocked=false; });
+        return;
+      }
+    } else {
+      // no lock: PC 0 read, 1 add, 2 write
+      if (t.pc === 0){ t.tmp = this.counter; t.reg = t.tmp; logMsg(`<span class="ts">·</span> ${T} read counter → ${t.tmp}`); t.pc=1; return; }
+      if (t.pc === 1){ t.tmp = t.tmp + 1; logMsg(`<span class="ts">·</span> ${T} add → ${t.tmp}`); t.pc=2; return; }
+      if (t.pc === 2){
+        const before = this.counter;
+        this.counter = t.tmp; this.anim.writer=t.tid; this.anim.flash=1;
+        if (t.tmp <= before){
+          logMsg(`<span class="ts">!</span> ${T} write counter = ${t.tmp} (was ${before}) — <b>LOST UPDATE</b>`,"warn");
+        } else {
+          logMsg(`<span class="ts">·</span> ${T} write counter = ${t.tmp}`);
+        }
+        t.done++; t.pc=0; t.reg=null; return;
+      }
+    }
+  },
+
+  finish(){
+    if (this.finished) return;
+    this.finished = true;
+    const expected = 2*this.N;
+    const lost = expected - this.counter;
+    if (lost > 0) logMsg(`<span class="ts">done</span> counter=${this.counter} · expected ${expected} · <b>${lost} update(s) LOST</b>`,"warn");
+    else logMsg(`<span class="ts">done</span> counter=${this.counter} · expected ${expected} · all updates preserved ✓`,"ok");
+    stopRun();
+  },
+
+  metrics(){
+    const expected = 2*this.N;
+    const lost = this.finished ? expected - this.counter : null;
+    return [
+      { k:"Counter", v:this.counter, hl:true },
+      { k:"Expected (2N)", v:expected },
+      { k:"Lock", v:this.mode==="lock"?"ON":"OFF", cls:this.mode==="lock"?"good":"bad" },
+      { k:"Lost updates", v: lost===null?"—":lost, cls: lost>0?"bad":(lost===0?"good":"") }
+    ];
+  },
+
+  draw(C){
+    ctx.clearRect(0,0,W,H);
+    // shared counter box centered top
+    const boxW=150, boxH=70, bx=(W-boxW)/2, by=30;
+    const flash = this.anim.flash;
+    ctx.fillStyle = C.surf2;
+    roundRect(bx,by,boxW,boxH,10); ctx.fill();
+    ctx.lineWidth=2;
+    ctx.strokeStyle = flash>0 ? (this.anim.writer===0?C.gold:C.buy) : C.line;
+    roundRect(bx,by,boxW,boxH,10); ctx.stroke();
+    ctx.fillStyle=C.faint; ctx.font="11px 'IBM Plex Mono'"; ctx.textAlign="center";
+    ctx.fillText("SHARED counter", bx+boxW/2, by+20);
+    ctx.fillStyle=C.ink; ctx.font="700 34px 'Space Grotesk'";
+    ctx.fillText(this.counter, bx+boxW/2, by+56);
+
+    // lock badge
+    if (this.mode==="lock"){
+      const lh = this.lockHeld;
+      ctx.font="11px 'IBM Plex Mono'"; ctx.textAlign="center";
+      ctx.fillStyle = lh===-1 ? C.dim : (lh===0?C.gold:C.buy);
+      ctx.fillText(lh===-1 ? "🔓 lock free" : `🔒 held by T${lh}`, bx+boxW/2, by+boxH+20);
+    }
+
+    // two threads bottom
+    const cy = 250;
+    [0,1].forEach(tid=>{
+      const t=this.threads[tid];
+      const cxp = tid===0 ? W*0.27 : W*0.73;
+      const col = tid===0?C.gold:C.buy;
+      // thread card
+      const cw=230, ch=120, cx0=cxp-cw/2, cy0=cy-30;
+      ctx.fillStyle=C.surf; roundRect(cx0,cy0,cw,ch,10); ctx.fill();
+      ctx.lineWidth = (this.anim.writer===tid&&flash>0)?2:1;
+      ctx.strokeStyle = (t.blocked? C.sell : (this.anim.writer===tid&&flash>0? col : C.line));
+      roundRect(cx0,cy0,cw,ch,10); ctx.stroke();
+
+      ctx.textAlign="left";
+      ctx.fillStyle=col; ctx.font="600 15px 'Space Grotesk'";
+      ctx.fillText(`Thread ${tid}`, cx0+14, cy0+24);
+      ctx.fillStyle=C.dim; ctx.font="11px 'IBM Plex Mono'";
+      ctx.fillText(`${t.done}/${t.total} done`, cx0+14, cy0+42);
+      if (t.blocked){ ctx.fillStyle=C.sell; ctx.fillText("BLOCKED on lock", cx0+120, cy0+42); }
+
+      // local register / tmp
+      ctx.fillStyle=C.faint; ctx.font="10px 'IBM Plex Mono'";
+      ctx.fillText("local tmp", cx0+14, cy0+66);
+      ctx.fillStyle=C.surf2; roundRect(cx0+14, cy0+72, 70, 32, 7); ctx.fill();
+      ctx.strokeStyle=C.line; ctx.lineWidth=1; roundRect(cx0+14, cy0+72, 70, 32, 7); ctx.stroke();
+      ctx.fillStyle=C.ink; ctx.font="600 17px 'IBM Plex Mono'"; ctx.textAlign="center";
+      ctx.fillText(t.pc>0||this.mode==="lock"&&t.pc>1 ? t.tmp : "—", cx0+49, cy0+94);
+
+      // pc / instruction pointer
+      const instrs = this.mode==="lock"
+        ? ["acquire()","read","add","write+release"]
+        : ["read","add","write"];
+      ctx.textAlign="left"; ctx.font="11px 'IBM Plex Mono'";
+      for (let i=0;i<instrs.length;i++){
+        const active = (t.pc===i) && t.done<t.total;
+        ctx.fillStyle = active ? col : C.faint;
+        ctx.fillText((active?"▸ ":"  ")+instrs[i], cx0+100, cy0+62+i*16);
+      }
+
+      // arrow to shared box
+      ctx.strokeStyle = (this.anim.writer===tid&&flash>0)?col:C.line;
+      ctx.lineWidth=(this.anim.writer===tid&&flash>0)?2:1;
+      ctx.beginPath();
+      ctx.moveTo(cxp, cy0); ctx.lineTo(bx+boxW/2, by+boxH);
+      ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+    });
+
+    if (this.anim.flash>0) this.anim.flash -= 0.08;
+  }
+};
+
+/* =====================================================================
+ * DEMO 2 — PRODUCER / CONSUMER (bounded buffer)
+ * Producer adds items when buffer not full; consumer removes when not
+ * empty. Speeds adjustable; visualize fill/drain & blocking.
+ * ===================================================================== */
+const PCDemo = {
+  id: "pc", roman: "II", name: "Producer–Consumer", lc: "Producer–Consumer",
+  statement: `A <b>producer</b> thread pushes items into a fixed-size ring buffer; a <b>consumer</b> thread pops them. The invariant: a producer must <b>block when the buffer is full</b>, a consumer must <b>block when it is empty</b> (a bounded buffer guarded by two counting semaphores). Slide the speeds apart and watch back-pressure: a fast producer fills the buffer and stalls; a fast consumer drains it and starves.`,
+  note: `<p>The buffer decouples the two threads — but only up to its capacity. This is the classic <b>back-pressure</b> mechanism behind every bounded queue, channel, and thread-pool work queue.</p>
+  <p><span class="tag good">producer faster</span> buffer saturates → producer <b>BLOCKS (full)</b>.<br/><span class="tag bad">consumer faster</span> buffer empties → consumer <b>BLOCKS (empty)</b>.</p>
+  <p>Throughput is capped by the <b>slower</b> of the two, never the faster.</p>`,
+  cap: 8,
+  pSpeed: 5, cSpeed: 5,
+  params: [
+    { key: "cap", label: "Buffer capacity", min: 3, max: 16, val: 8, fmt: v=>v },
+    { key: "pSpeed", label: "Producer speed", min: 1, max: 10, val: 5, fmt: v=>v },
+    { key: "cSpeed", label: "Consumer speed", min: 1, max: 10, val: 5, fmt: v=>v },
+  ],
+
+  reset(){
+    this.buf = [];          // array of item ids
+    this.nextId = 1;
+    this.produced = 0; this.consumed = 0;
+    this.pCredit = 0; this.cCredit = 0;
+    this.pState = "run"; this.cState = "run"; // run|block
+    this.pFlash=0; this.cFlash=0;
+    this.finished=false;
+    logClear();
+    logMsg(`<span class="ts">init</span> capacity=${this.cap} · producer×${this.pSpeed} · consumer×${this.cSpeed}`);
+  },
+
+  step(){
+    // accumulate credits per tick based on speed (cooperative)
+    this.pCredit += this.pSpeed/10;
+    this.cCredit += this.cSpeed/10;
+    let acted=false;
+    if (this.pCredit >= 1){
+      this.pCredit -= 1;
+      if (this.buf.length < this.cap){
+        const id=this.nextId++; this.buf.push(id); this.produced++; this.pFlash=1; this.pState="run";
+        logMsg(`<span class="t0">PROD</span> put #${id} → buffer [${this.buf.length}/${this.cap}]`);
+        acted=true;
+      } else {
+        if (this.pState!=="block"){ logMsg(`<span class="t0">PROD</span> buffer full — <b>BLOCK</b>`,"warn"); }
+        this.pState="block";
+      }
+    }
+    if (this.cCredit >= 1){
+      this.cCredit -= 1;
+      if (this.buf.length > 0){
+        const id=this.buf.shift(); this.consumed++; this.cFlash=1; this.cState="run";
+        logMsg(`<span class="t1">CONS</span> got #${id} ← buffer [${this.buf.length}/${this.cap}]`,"ok");
+        // a put may now proceed
+        if (this.pState==="block") this.pState="run";
+        acted=true;
+      } else {
+        if (this.cState!=="block"){ logMsg(`<span class="t1">CONS</span> buffer empty — <b>BLOCK</b>`,"warn"); }
+        this.cState="block";
+      }
+    }
+    return true; // runs indefinitely
+  },
+
+  metrics(){
+    const fill = this.buf.length;
+    return [
+      { k:"Produced", v:this.produced, cls:"" },
+      { k:"Consumed", v:this.consumed, cls:"" },
+      { k:"Buffer fill", v:`${fill}/${this.cap}`, hl:true },
+      { k:"State", v: this.pState==="block"?"P-FULL":(this.cState==="block"?"C-EMPTY":"flowing"),
+        cls: (this.pState==="block"||this.cState==="block")?"bad":"good" }
+    ];
+  },
+
+  draw(C){
+    ctx.clearRect(0,0,W,H);
+    const cap=this.cap;
+    // buffer slots centered
+    const slotW = Math.min(54, (W-200)/cap), gap=8;
+    const totW = cap*slotW + (cap-1)*gap;
+    const startX = (W-totW)/2, by=160, bh=58;
+
+    // producer (left)
+    drawAgent(C, W*0.5-totW/2-110, by+bh/2, "PRODUCER", C.gold, this.pState, this.pFlash, "→");
+    // consumer (right)
+    drawAgent(C, W*0.5+totW/2+110, by+bh/2, "CONSUMER", C.buy, this.cState, this.cFlash, "→");
+
+    // buffer label
+    ctx.fillStyle=C.faint; ctx.font="11px 'IBM Plex Mono'"; ctx.textAlign="center";
+    ctx.fillText("BOUNDED RING BUFFER", W/2, by-22);
+
+    for (let i=0;i<cap;i++){
+      const x=startX+i*(slotW+gap);
+      const filled = i < this.buf.length;
+      ctx.fillStyle = filled ? C.surf2 : C.surf;
+      roundRect(x,by,slotW,bh,7); ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=C.line; roundRect(x,by,slotW,bh,7); ctx.stroke();
+      if (filled){
+        const id=this.buf[i];
+        ctx.fillStyle=C.gold; ctx.font="600 15px 'IBM Plex Mono'"; ctx.textAlign="center";
+        ctx.fillText("#"+id, x+slotW/2, by+bh/2+5);
+      }
+    }
+    // head/tail markers
+    ctx.font="10px 'IBM Plex Mono'"; ctx.textAlign="center";
+    ctx.fillStyle=C.buy; ctx.fillText("◤ head (consume)", startX+slotW/2, by+bh+18);
+    if (this.buf.length>0){
+      const tx=startX+(this.buf.length-1)*(slotW+gap)+slotW/2;
+      ctx.fillStyle=C.gold; ctx.fillText("tail (produce) ◢", tx, by-8);
+    }
+
+    // arrows
+    ctx.strokeStyle = this.pState==="block"?C.sell:C.gold; ctx.lineWidth=2;
+    arrow(W*0.5-totW/2-60, by+bh/2, startX-8, by+bh/2);
+    ctx.strokeStyle = this.cState==="block"?C.sell:C.buy;
+    arrow(startX+totW+8, by+bh/2, W*0.5+totW/2+60, by+bh/2);
+
+    if (this.pFlash>0) this.pFlash-=0.1;
+    if (this.cFlash>0) this.cFlash-=0.1;
+  }
+};
+
+function drawAgent(C, cx, cy, label, col, st, flash, dir){
+  const w=96,h=70, x=cx-w/2, y=cy-h/2;
+  ctx.fillStyle=C.surf; roundRect(x,y,w,h,9); ctx.fill();
+  ctx.lineWidth = flash>0?2:1;
+  ctx.strokeStyle = st==="block"? C.sell : (flash>0?col:C.line);
+  roundRect(x,y,w,h,9); ctx.stroke();
+  ctx.fillStyle=col; ctx.font="600 12px 'Space Grotesk'"; ctx.textAlign="center";
+  ctx.fillText(label, cx, y+24);
+  ctx.font="10px 'IBM Plex Mono'";
+  ctx.fillStyle = st==="block"?C.sell:C.dim;
+  ctx.fillText(st==="block"?"BLOCKED":"running", cx, y+46);
+}
+
+/* =====================================================================
+ * DEMO 3 — DINING PHILOSOPHERS
+ * 5 philosophers, 5 forks. "Naive" ordering -> deadlock (everyone grabs
+ * left then waits on right). "Ordered" -> break the cycle by global
+ * resource ordering (lowest-id fork first).
+ * ===================================================================== */
+const PhilDemo = {
+  id: "phil", roman: "III", name: "Dining philosophers", lc: "Dining philosophers",
+  statement: `Five philosophers sit around a table; between each pair lies one fork. To eat, a philosopher needs <b>both</b> adjacent forks. In the <span style="color:var(--sell)">naive</span> strategy each grabs their <b>left</b> fork then reaches for the right — if all grab left simultaneously, every right fork is taken and nobody can proceed: a <b>circular-wait deadlock</b>. The <span style="color:var(--buy)">ordered</span> strategy always picks up the <b>lower-numbered</b> fork first, breaking the cycle (Dijkstra's resource hierarchy).`,
+  note: `<p>Deadlock needs four conditions at once: mutual exclusion, hold-and-wait, no preemption, and <b>circular wait</b>. Forks are mutually exclusive and non-preemptible — so we break the cycle.</p>
+  <p><span class="tag bad">naive</span> grab left → wait right → everyone holds one, waits forever.<br/><span class="tag good">ordered</span> impose a global order on forks → no cycle can form → progress guaranteed.</p>
+  <p>The center dot turns <span style="color:var(--sell)">red</span> when a full circular wait is detected.</p>`,
+  mode: "naive",  // naive | ordered
+  N: 5,
+  params: [],
+
+  reset(){
+    const N=this.N;
+    this.forks = new Array(N).fill(-1);  // -1 free, else philosopher id holding
+    this.phils = [];
+    for (let i=0;i<N;i++){
+      this.phils.push({ id:i, state:"think", left:i, right:(i+1)%N, has:[], hunger: 0, eaten:0, cool:0 });
+    }
+    this.deadlock=false;
+    this.finished=false;
+    logClear();
+    logMsg(`<span class="ts">init</span> ${N} philosophers · strategy=${this.mode}`, this.mode==="ordered"?"ok":"warn");
+  },
+
+  // each philosopher: think -> hungry -> grab forks -> eat -> release
+  step(rng){
+    if (this.deadlock) return false;
+    const N=this.N;
+    // advance each philosopher one micro-step (cooperative, shuffled order)
+    const order=[...Array(N).keys()];
+    // shuffle deterministically with rng for varied interleaving
+    for (let i=order.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
+    for (const id of order){
+      const p=this.phils[id];
+      this.advancePhil(p, rng);
+    }
+    this.detectDeadlock();
+    return !this.deadlock;
+  },
+
+  advancePhil(p, rng){
+    const N=this.N;
+    if (p.state==="think"){
+      if (p.cool>0){ p.cool--; return; }
+      // become hungry
+      p.state="hungry"; p.want = this.acquireOrder(p);
+      logMsg(`<span class="ts">·</span> P${p.id} hungry → wants forks ${p.want.join(" then ")}`);
+      return;
+    }
+    if (p.state==="hungry"){
+      // try to grab forks in order; hold-and-wait
+      for (const f of p.want){
+        if (p.has.includes(f)) continue;
+        if (this.forks[f]===-1){
+          this.forks[f]=p.id; p.has.push(f);
+          logMsg(`<span class="ts">·</span> P${p.id} picked up fork ${f}`);
+          // in naive mode, after grabbing left, pause (hold-and-wait window)
+          if (this.mode==="naive" && p.has.length<2) return;
+        } else {
+          // blocked waiting on fork f (held by another) — hold-and-wait
+          return;
+        }
+      }
+      if (p.has.length===2){ p.state="eat"; p.hunger=2+Math.floor(rng()*3);
+        logMsg(`<span class="ts">✓</span> P${p.id} has both forks — EATING`,"ok"); }
+      return;
+    }
+    if (p.state==="eat"){
+      p.hunger--;
+      if (p.hunger<=0){
+        // release forks
+        p.has.forEach(f=>{ this.forks[f]=-1; });
+        logMsg(`<span class="ts">·</span> P${p.id} done eating — released forks ${p.has.join(",")}`);
+        p.has=[]; p.eaten++; p.state="think"; p.cool=1+Math.floor(rng()*3);
+      }
+      return;
+    }
+  },
+
+  acquireOrder(p){
+    if (this.mode==="ordered"){
+      return [p.left, p.right].slice().sort((a,b)=>a-b);
+    }
+    // naive: left first, then right
+    return [p.left, p.right];
+  },
+
+  detectDeadlock(){
+    // deadlock: every philosopher hungry holding exactly 1 fork, none can proceed
+    const allStuck = this.phils.every(p => p.state==="hungry" && p.has.length===1);
+    if (allStuck && !this.deadlock){
+      this.deadlock=true; this.finished=true;
+      logMsg(`<span class="ts">‼</span> CIRCULAR WAIT — every philosopher holds one fork, waits for the other. <b>DEADLOCK</b>`,"warn");
+      stopRun();
+    }
+  },
+
+  metrics(){
+    const eating=this.phils.filter(p=>p.state==="eat").length;
+    const hungry=this.phils.filter(p=>p.state==="hungry").length;
+    const totalEaten=this.phils.reduce((s,p)=>s+p.eaten,0);
+    return [
+      { k:"Strategy", v:this.mode==="ordered"?"ORDERED":"NAIVE", cls:this.mode==="ordered"?"good":"bad" },
+      { k:"Eating now", v:eating, cls:"good" },
+      { k:"Meals served", v:totalEaten, hl:true },
+      { k:"Status", v:this.deadlock?"DEADLOCK":"live", cls:this.deadlock?"bad":"good" }
+    ];
+  },
+
+  draw(C){
+    ctx.clearRect(0,0,W,H);
+    const N=this.N, cx=W/2, cy=H/2-6, R=120, fr=160;
+    // table
+    ctx.fillStyle=C.surf2; ctx.beginPath(); ctx.arc(cx,cy,90,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.stroke();
+    // center status dot
+    ctx.beginPath(); ctx.arc(cx,cy,16,0,Math.PI*2);
+    ctx.fillStyle = this.deadlock ? C.sell : (this.phils.some(p=>p.state==="eat")?C.buy:C.faint);
+    ctx.fill();
+    ctx.fillStyle=C.bg; ctx.font="600 11px 'IBM Plex Mono'"; ctx.textAlign="center";
+    ctx.fillText(this.deadlock?"DL":"OK", cx, cy+4);
+
+    // forks: drawn between philosophers; angle offset by half
+    for (let f=0; f<N; f++){
+      const a = (f/N)*Math.PI*2 - Math.PI/2 + Math.PI/N;
+      const fx=cx+Math.cos(a)*fr*0.6, fy=cy+Math.sin(a)*fr*0.6;
+      const held = this.forks[f]!==-1;
+      ctx.save(); ctx.translate(fx,fy); ctx.rotate(a+Math.PI/2);
+      ctx.strokeStyle = held ? C.gold : C.faint; ctx.lineWidth=held?3:2;
+      ctx.beginPath(); ctx.moveTo(0,-11); ctx.lineTo(0,11); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = held?C.gold:C.faint; ctx.font="9px 'IBM Plex Mono'"; ctx.textAlign="center";
+      ctx.fillText("f"+f, fx, fy-16);
+    }
+
+    // philosophers
+    for (let i=0;i<N;i++){
+      const a=(i/N)*Math.PI*2 - Math.PI/2;
+      const px=cx+Math.cos(a)*fr, py=cy+Math.sin(a)*fr;
+      const p=this.phils[i];
+      let col=C.faint, label="think";
+      if (p.state==="hungry"){ col=C.gold; label="hungry"; }
+      if (p.state==="eat"){ col=C.buy; label="EAT"; }
+      if (this.deadlock && p.state==="hungry"){ col=C.sell; label="wait"; }
+      ctx.beginPath(); ctx.arc(px,py,26,0,Math.PI*2);
+      ctx.fillStyle=C.surf; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle=col; ctx.stroke();
+      ctx.fillStyle=col; ctx.font="600 14px 'Space Grotesk'"; ctx.textAlign="center";
+      ctx.fillText("P"+i, px, py+1);
+      ctx.fillStyle=C.dim; ctx.font="9px 'IBM Plex Mono'";
+      ctx.fillText(label, px, py+15);
+      // meals badge
+      ctx.fillStyle=C.faint; ctx.fillText("×"+p.eaten, px, py-32);
+      // line to held forks
+      p.has.forEach(f=>{
+        const fa=(f/N)*Math.PI*2 - Math.PI/2 + Math.PI/N;
+        const fx=cx+Math.cos(fa)*fr*0.6, fy=cy+Math.sin(fa)*fr*0.6;
+        ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(fx,fy); ctx.stroke(); ctx.setLineDash([]);
+      });
+    }
+  }
+};
+
+/* =====================================================================
+ * DEMO 4 — MUTEX vs LOCK-FREE (CAS)
+ * Many threads increment a shared counter. Mutex: serialize via lock
+ * (contention = idle wait time). Lock-free: compare-and-swap retry loop
+ * (no blocking, but wasted work on CAS failures).
+ * ===================================================================== */
+const CasDemo = {
+  id: "cas", roman: "IV", name: "Mutex vs lock-free", lc: "Mutex vs lock-free",
+  statement: `<b>Eight</b> worker threads all hammer one shared counter. A <span style="color:var(--gold)">mutex</span> serializes them: only the lock holder makes progress, the rest sit <b>idle/blocked</b> (no wasted CPU, but no parallelism in the critical section). A <span style="color:var(--buy)">lock-free</span> counter uses an atomic <b>compare-and-swap</b> retry loop: no thread ever blocks, but under contention many CAS attempts <b>fail and retry</b> — wasted work instead of wasted waiting. Watch the trade-off live.`,
+  note: `<p>Both approaches converge to the correct total. The difference is <i>how</i> they pay for contention:</p>
+  <p><span class="tag" style="color:var(--gold);border-color:var(--gold)">mutex</span> waiters block — zero wasted CPU, but strictly serial &amp; risks priority inversion.<br/><span class="tag good">lock-free</span> waiters spin a CAS retry — never blocked, but failed CAS = burned cycles.</p>
+  <p>The bars track <b>useful</b> vs <b>wasted</b> ticks for each scheme as they race to the same total.</p>`,
+  T: 8, target: 40,
+  params: [
+    { key: "T", label: "Worker threads", min: 2, max: 12, val: 8, fmt: v=>v },
+    { key: "target", label: "Increments to reach", min: 20, max: 80, val: 40, fmt: v=>v },
+  ],
+
+  reset(){
+    // two independent worlds racing to `target`
+    this.mx = { counter:0, lockHeld:-1, threads: mk(this.T), useful:0, wasted:0, done:false };
+    this.lf = { counter:0, threads: mk(this.T), useful:0, wasted:0, done:false };
+    function mk(T){ return [...Array(T)].map((_,i)=>({id:i, pc:0, tmp:0, st:"idle"})); }
+    this.finished=false;
+    logClear();
+    logMsg(`<span class="ts">init</span> ${this.T} threads · target=${this.target} · mutex vs lock-free CAS`);
+  },
+
+  step(rng){
+    let live=false;
+    if (!this.mx.done) { this.stepMutex(rng); live=true; }
+    if (!this.lf.done) { this.stepLockFree(rng); live=true; }
+    if (this.mx.done && this.lf.done && !this.finished){
+      this.finished=true;
+      const winner = this.mx.useful+this.mx.wasted < this.lf.useful+this.lf.wasted ? "mutex" : "lock-free";
+      logMsg(`<span class="ts">done</span> both reached ${this.target}. mutex: ${this.mx.wasted} idle-waits · lock-free: ${this.lf.wasted} CAS retries`,"ok");
+      stopRun();
+    }
+    return live;
+  },
+
+  stepMutex(rng){
+    const w=this.mx;
+    if (w.counter>=this.target){ w.done=true; w.threads.forEach(t=>t.st="done"); return; }
+    // pick a random thread to advance
+    const t = w.threads[Math.floor(rng()*w.threads.length)];
+    if (w.lockHeld===-1){
+      w.lockHeld=t.id; t.tmp=w.counter+1; t.st="crit";
+      w.threads.forEach(o=>{ if(o.id!==t.id && o.st!=="done") o.st="block"; });
+      w.useful++;
+    } else if (w.lockHeld===t.id){
+      w.counter=t.tmp; w.lockHeld=-1; t.st="idle"; w.useful++;
+      if (w.counter>=this.target){ w.done=true; w.threads.forEach(x=>x.st="done"); logMsg(`<span class="t0">MUTEX</span> reached ${this.target}`,"ok"); }
+    } else {
+      // this thread is blocked, can't progress -> wasted wait
+      w.wasted++;
+    }
+  },
+
+  stepLockFree(rng){
+    const w=this.lf;
+    if (w.counter>=this.target){ w.done=true; w.threads.forEach(t=>t.st="done"); return; }
+    const t=w.threads[Math.floor(rng()*w.threads.length)];
+    if (t.pc===0){ t.tmp=w.counter; t.st="read"; t.pc=1; return; }
+    // CAS: succeed only if counter still == tmp
+    if (w.counter===t.tmp){
+      w.counter=t.tmp+1; t.st="cas-ok"; w.useful++; t.pc=0;
+      if (w.counter>=this.target){ w.done=true; w.threads.forEach(x=>x.st="done"); logMsg(`<span class="t1">CAS</span> reached ${this.target}`,"ok"); }
+    } else {
+      t.st="cas-fail"; w.wasted++; t.pc=0;  // retry from scratch
+    }
+  },
+
+  metrics(){
+    const mxTot=this.mx.useful+this.mx.wasted, lfTot=this.lf.useful+this.lf.wasted;
+    return [
+      { k:"Mutex counter", v:this.mx.counter, cls:"" },
+      { k:"Mutex idle-waits", v:this.mx.wasted, cls:"bad" },
+      { k:"Lock-free counter", v:this.lf.counter, cls:"" },
+      { k:"CAS retries", v:this.lf.wasted, cls:"bad" }
+    ];
+  },
+
+  draw(C){
+    ctx.clearRect(0,0,W,H);
+    const colW=W/2;
+    this.drawWorld(C, this.mx, 0, "MUTEX", C.gold, true);
+    this.drawWorld(C, this.lf, colW, "LOCK-FREE (CAS)", C.buy, false);
+    // divider
+    ctx.strokeStyle=C.line; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(colW,16); ctx.lineTo(colW,H-16); ctx.stroke();
+  },
+
+  drawWorld(C, w, x0, title, col, isMutex){
+    const colW=W/2, cx=x0+colW/2;
+    ctx.fillStyle=col; ctx.font="600 14px 'Space Grotesk'"; ctx.textAlign="center";
+    ctx.fillText(title, cx, 30);
+
+    // counter progress
+    ctx.fillStyle=C.faint; ctx.font="10px 'IBM Plex Mono'";
+    ctx.fillText("counter", cx, 52);
+    ctx.fillStyle=C.ink; ctx.font="700 30px 'Space Grotesk'";
+    ctx.fillText(`${w.counter} / ${this.target}`, cx, 84);
+    // progress bar
+    const bw=colW-90, bx=x0+45, by=96;
+    ctx.fillStyle=C.surf2; roundRect(bx,by,bw,8,4); ctx.fill();
+    ctx.fillStyle=col; roundRect(bx,by,bw*clamp(w.counter/this.target,0,1),8,4); ctx.fill();
+
+    // threads grid
+    const T=w.threads.length, cols=Math.min(4,T), cardW=(colW-60)/cols, cardH=34, gx=6, gy=8;
+    const gridX=x0+30, gridY=124;
+    w.threads.forEach((t,i)=>{
+      const r=Math.floor(i/cols), c=i%cols;
+      const x=gridX+c*(cardW+gx), y=gridY+r*(cardH+gy);
+      let bc=C.line, tc=C.dim, lbl=t.st;
+      if (t.st==="crit"||t.st==="cas-ok"){ bc=C.buy; tc=C.buy; lbl=isMutex?"in CS":"CAS ✓"; }
+      if (t.st==="block"){ bc=C.sell; tc=C.sell; lbl="blocked"; }
+      if (t.st==="cas-fail"){ bc=C.sell; tc=C.sell; lbl="CAS ✗"; }
+      if (t.st==="read"){ bc=C.gold; tc=C.gold; lbl="read"; }
+      if (t.st==="done"){ bc=C.faint; tc=C.faint; lbl="done"; }
+      ctx.fillStyle=C.surf; roundRect(x,y,cardW,cardH,6); ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=bc; roundRect(x,y,cardW,cardH,6); ctx.stroke();
+      ctx.fillStyle=tc; ctx.font="600 11px 'IBM Plex Mono'"; ctx.textAlign="left";
+      ctx.fillText("T"+t.id, x+8, y+15);
+      ctx.font="9px 'IBM Plex Mono'"; ctx.fillStyle=tc;
+      ctx.fillText(lbl, x+8, y+27);
+    });
+
+    // useful vs wasted bars
+    const baseY=H-54, total=w.useful+w.wasted || 1;
+    ctx.fillStyle=C.faint; ctx.font="10px 'IBM Plex Mono'"; ctx.textAlign="left";
+    ctx.fillText("useful", x0+30, baseY-6);
+    ctx.fillText(isMutex?"idle-wait":"CAS retry", x0+30, baseY+22);
+    const maxBar=colW-130;
+    ctx.fillStyle=C.buy; roundRect(x0+100, baseY-16, maxBar*(w.useful/total), 11, 3); ctx.fill();
+    ctx.fillStyle=C.sell; roundRect(x0+100, baseY+12, maxBar*(w.wasted/total), 11, 3); ctx.fill();
+    ctx.fillStyle=C.dim; ctx.font="10px 'IBM Plex Mono'"; ctx.textAlign="right";
+    ctx.fillText(w.useful, x0+colW-30, baseY-7);
+    ctx.fillText(w.wasted, x0+colW-30, baseY+21);
+  }
+};
+
+const DEMOS = [RaceDemo, PCDemo, PhilDemo, CasDemo];
+
+/* =====================================================================
+ * DRAWING HELPERS
+ * ===================================================================== */
+function roundRect(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function arrow(x1,y1,x2,y2){
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1), s=7;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-s*Math.cos(a-0.4), y2-s*Math.sin(a-0.4));
+  ctx.lineTo(x2-s*Math.cos(a+0.4), y2-s*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+/* =====================================================================
+ * SEEDED RNG (deterministic interleavings)
+ * ===================================================================== */
+function makeRng(seed){
+  let s = seed>>>0 || 1;
+  return function(){ s ^= s<<13; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; };
+}
+let rng = makeRng(12345);
+
+/* =====================================================================
+ * SCHEDULER LOOP (requestAnimationFrame, throttled by tickRate)
+ * ===================================================================== */
+function loop(ts){
+  if (!state.running){ state.rafId=null; return; }
+  if (!state.lastT) state.lastT=ts;
+  const dt = ts - state.lastT; state.lastT=ts;
+  // tickRate (1..20) -> ticks per second
+  const tps = state.tickRate * 2.2;
+  state.acc += dt/1000 * tps;
+  let steps=0;
+  while (state.acc >= 1 && steps < 40){
+    state.acc -= 1; steps++;
+    const cont = state.demo.step(rng);
+    if (!cont){ break; }
+  }
+  render();
+  if (state.running) state.rafId = requestAnimationFrame(loop);
+}
+
+function startRun(){
+  if (state.running) return;
+  state.running=true; state.lastT=0; state.acc=0;
+  $("btn-play").textContent="⏸ Pause";
+  $("btn-play").classList.remove("primary");
+  state.rafId = requestAnimationFrame(loop);
+}
+function stopRun(){
+  state.running=false;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  state.rafId=null;
+  $("btn-play").textContent="▶ Play";
+  $("btn-play").classList.add("primary");
+}
+function stepOnce(){
+  stopRun();
+  state.demo.step(rng);
+  render();
+}
+
+/* =====================================================================
+ * RENDER (canvas + metrics)
+ * ===================================================================== */
+function render(){
+  const C=COL();
+  state.demo.draw(C);
+  renderMetrics();
+}
+function renderMetrics(){
+  const m = state.demo.metrics();
+  const host=$("metrics");
+  host.innerHTML="";
+  m.forEach(x=>{
+    const d=document.createElement("div");
+    d.className="metric"+(x.hl?" hl":"");
+    d.innerHTML=`<div class="k">${x.k}</div><div class="v ${x.cls||""}">${x.v}</div>`+
+      (x.sub?`<div class="sub">${x.sub}</div>`:"");
+    host.appendChild(d);
+  });
+}
+
+/* =====================================================================
+ * UI WIRING
+ * ===================================================================== */
+function buildTabs(){
+  const host=document.querySelector(".variants");
+  host.innerHTML="";
+  DEMOS.forEach(d=>{
+    const b=document.createElement("button");
+    b.className="vtab"; b.setAttribute("role","tab");
+    b.innerHTML=`<span class="roman">${d.roman}</span><span class="vname">${d.name}</span>`;
+    b.addEventListener("click",()=>selectDemo(d));
+    host.appendChild(b);
+  });
+}
+
+function renderParams(){
+  const host=$("param-slot");
+  host.innerHTML="";
+  const d=state.demo;
+  if (!d.params || d.params.length===0) return;
+  const bar=document.createElement("div");
+  bar.className="control-bar";
+  bar.style.marginTop="-6px";
+  d.params.forEach(p=>{
+    const c=document.createElement("div");
+    c.className="ctrl";
+    c.innerHTML=`<label for="p-${p.key}">${p.label}<span class="val" id="v-${p.key}">${p.fmt(d[p.key])}</span></label>
+      <input type="range" id="p-${p.key}" min="${p.min}" max="${p.max}" value="${d[p.key]}" />`;
+    bar.appendChild(c);
+    setTimeout(()=>{
+      const inp=$("p-"+p.key);
+      inp.addEventListener("input",()=>{
+        d[p.key]=+inp.value;
+        $("v-"+p.key).textContent=p.fmt(+inp.value);
+        // live params for pc demo / cas; structural ones reset
+        if (["cap","pSpeed","cSpeed"].includes(p.key) && d.id==="pc"){
+          if (p.key==="cap"){ doReset(); } // capacity change resets buffer
+        } else {
+          doReset();
+        }
+      });
+    },0);
+  });
+  host.appendChild(bar);
+}
+
+function renderModeToggle(){
+  const host=$("mode-slot");
+  host.innerHTML="";
+  const d=state.demo;
+  let opts=null;
+  if (d.id==="race") opts=[["nolock","No lock"],["lock","With lock"]];
+  if (d.id==="phil") opts=[["naive","Naive"],["ordered","Ordered"]];
+  if (!opts) return;
+  const seg=document.createElement("div");
+  seg.className="seg";
+  opts.forEach(([val,label])=>{
+    const b=document.createElement("button");
+    b.textContent=label;
+    if (d.mode===val) b.classList.add("active");
+    b.addEventListener("click",()=>{
+      d.mode=val;
+      seg.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      doReset();
+    });
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+
+function selectDemo(d){
+  stopRun();
+  state.demo=d;
+  document.querySelectorAll(".vtab").forEach((b,i)=>b.setAttribute("aria-selected", DEMOS[i]===d));
+  $("p-lc").textContent=d.lc;
+  $("statement").innerHTML=d.statement;
+  $("note").innerHTML=d.note;
+  $("stage-h").textContent=d.name+" · visualization";
+  renderModeToggle();
+  renderParams();
+  doReset();
+}
+
+function doReset(){
+  stopRun();
+  rng = makeRng(0x9e37 ^ (Date.now()&0xffff));
+  state.demo.reset();
+  render();
+}
+
+function applyTheme(val){
+  document.documentElement.setAttribute("data-theme",val);
+  document.querySelectorAll("#theme-toggle button").forEach(b=>
+    b.classList.toggle("active", b.dataset.themeVal===val));
+  try{ localStorage.setItem("cp-theme",val); }catch(e){}
+  if (state.demo) render();
+}
+
+function bindControls(){
+  $("btn-play").addEventListener("click",()=>{ state.running?stopRun():startRun(); });
+  $("btn-step").addEventListener("click",stepOnce);
+  $("btn-reset").addEventListener("click",doReset);
+  $("speed").addEventListener("input",e=>{
+    state.tickRate=+e.target.value;
+    $("speed-val").textContent=state.tickRate+"×";
+  });
+  $("theme-toggle").addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(b) applyTheme(b.dataset.themeVal);
+  });
+  // resize canvas for crispness
+  window.addEventListener("resize",()=>{ if(state.demo) render(); });
+}
+
+/* =====================================================================
+ * INIT
+ * ===================================================================== */
+let savedTheme="system";
+try{ savedTheme=localStorage.getItem("cp-theme")||"system"; }catch(e){}
+buildTabs();
+bindControls();
+applyTheme(savedTheme);
+selectDemo(DEMOS[0]);
+</script>
+</body>
+</html>

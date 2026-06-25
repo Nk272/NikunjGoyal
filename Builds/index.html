@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Playground — Nikunj Goyal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#0E1220;--surface:#161B2E;--surface-2:#1E2540;--line:#29314F;--line-soft:#20273f;--ink:#ECE7DA;--ink-dim:#8C93AD;--ink-faint:#5A6080;--gold:#E8B24B;--gold-soft:rgba(232,178,75,.14);--buy:#38C6A0;--sell:#E8675A;--display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--mono:"IBM Plex Mono","SF Mono",ui-monospace,monospace;--body:"IBM Plex Sans",system-ui,sans-serif;--radius:10px;}
+  [data-theme="light"]{--bg:#F4F1E8;--surface:#FFFFFF;--surface-2:#F1EDE1;--line:#DCD6C6;--line-soft:#E8E3D5;--ink:#20242F;--ink-dim:#5C6276;--ink-faint:#9197A8;--gold:#B47D1E;--gold-soft:rgba(180,125,30,.14);--buy:#1B9C77;--sell:#CC4636;}
+  @media (prefers-color-scheme:light){[data-theme="system"]{--bg:#F4F1E8;--surface:#FFFFFF;--surface-2:#F1EDE1;--line:#DCD6C6;--line-soft:#E8E3D5;--ink:#20242F;--ink-dim:#5C6276;--ink-faint:#9197A8;--gold:#B47D1E;--gold-soft:rgba(180,125,30,.14);--buy:#1B9C77;--sell:#CC4636;}}
+  *{box-sizing:border-box;}html,body{margin:0;}
+  body{background:radial-gradient(1200px 600px at 80% -10%,var(--gold-soft),transparent 60%),var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 22px 56px;}
+  .masthead{display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:26px;}
+  .mark{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:27px;line-height:1;}
+  .mark .accent{color:var(--gold);}
+  .tagline{font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+  .tagline b{color:var(--ink);font-weight:500;}
+  .theme-toggle{margin-left:auto;align-self:center;display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px;}
+  .theme-toggle button{appearance:none;cursor:pointer;background:transparent;border:none;color:var(--ink-dim);font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;}
+  .theme-toggle button.active{background:var(--gold);color:#2a1f06;font-weight:600;}
+  .hero{margin-bottom:30px;}
+  .hero h1{font-family:var(--display);font-weight:600;font-size:30px;letter-spacing:-.02em;margin:0 0 10px;line-height:1.15;}
+  .hero p{color:var(--ink-dim);font-size:15px;max-width:640px;margin:0;line-height:1.7;}
+  .seclabel{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin:30px 0 14px;display:flex;align-items:center;gap:10px;}
+  .seclabel::after{content:"";flex:1;height:1px;background:var(--line);}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media(max-width:680px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .12s,background .15s;position:relative;overflow:hidden;}
+  .card:hover{border-color:var(--gold);transform:translateY(-2px);}
+  .card .num{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.1em;}
+  .card h3{font-family:var(--display);font-weight:600;font-size:16px;margin:0;}
+  .card p{margin:0;color:var(--ink-dim);font-size:13px;line-height:1.55;}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;}
+  .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);background:var(--surface-2);border:1px solid var(--line-soft);border-radius:5px;padding:3px 7px;}
+  .tag.web{color:var(--buy);border-color:rgba(56,198,160,.3);}
+  .tag.sys{color:var(--gold);border-color:rgba(232,178,75,.3);}
+  .tag.note{color:var(--ink-faint);}
+  .card .kind{position:absolute;top:14px;right:15px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
+  footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .note-banner{background:var(--gold-soft);border:1px solid rgba(232,178,75,.3);border-radius:var(--radius);padding:13px 16px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);margin-bottom:24px;line-height:1.6;}
+  .note-banner b{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="mark">●&nbsp;Nikunj<span class="accent">Goyal</span></div>
+      <div class="tagline">THE PLAYGROUND — <b>things I built to understand things</b></div>
+    </div>
+    <div class="theme-toggle" id="themeToggle">
+      <button data-t="light">LIGHT</button><button data-t="dark">DARK</button><button data-t="system" class="active">SYSTEM</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>The math under the pixels,<br>made playable.</h1>
+    <p>A working set of interactive demos and small engines — dynamic programming you can watch fill in, a query optimizer you can step through, GPUs explained by animation, the curves under every vector graphic. Built for my own understanding; kept because they might be useful to yours.</p>
+  </div>
+
+  <div class="note-banner">
+    <b>Reviewing locally?</b> Each card opens a self-contained build. Web demos run by just opening <span style="color:var(--ink)">index.html</span> — no server, no build step. The systems projects (DB, cache, bin-packing) are Python folders with a README + <span style="color:var(--ink)">demo.py</span>. Nothing here is committed or published yet — that's your call in the morning.
+  </div>
+
+  <div class="seclabel">Algorithms you can play with</div>
+  <div class="grid">
+    <a class="card" href="01-leetcode-series/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 01</span>
+      <h3>DP, Played Out</h3>
+      <p>A themed dynamic-programming visualizer: Jump Game, House Robber, Stone Game, Climbing Stairs. Watch the table fill cell by cell, with the recurrence and the trace alongside.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">dynamic programming</span></div>
+    </a>
+    <a class="card" href="14-reverse-life/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 14</span>
+      <h3>Reverse Game of Life</h3>
+      <p>Paint a target board; a constraint solver searches for a predecessor that evolves into it. A hands-on tour of why running Life backwards is NP-hard and Gardens of Eden exist.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">SAT / search</span></div>
+    </a>
+  </div>
+
+  <div class="seclabel">The math under the pixels</div>
+  <div class="grid">
+    <a class="card" href="07-bezier-vectorize/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 07</span>
+      <h3>Curves Under the Pixels</h3>
+      <p>Drag a Bézier built by de Casteljau, simplify a hand-drawn stroke with Ramer–Douglas–Peucker, and trace a painted bitmap into an SVG path. The Adobe years, distilled.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">bézier · vectorization</span></div>
+    </a>
+    <a class="card" href="16-continued-fractions/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 16</span>
+      <h3>Continued Fractions &amp; Padé</h3>
+      <p>Best rational approximations unfolding live, and Padé approximants beating Taylor series — tied back to Hadamard gaps. The one that started as intern research.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">real analysis</span></div>
+    </a>
+    <a class="card" href="13-conv3d/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 13</span>
+      <h3>3D Convolutions, Visualized</h3>
+      <p>A kernel sliding through a voxel volume, receptive fields growing layer by layer, output dimensions updating live as you tweak stride and padding.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">deep learning</span></div>
+    </a>
+  </div>
+
+  <div class="seclabel">Systems, made visual</div>
+  <div class="grid">
+    <a class="card" href="05-sql-optimizer/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 05</span>
+      <h3>SQL Optimizer Visualizer</h3>
+      <p>Type a query; watch it parse into a logical tree, then a naive plan vs an optimized one — predicate pushdown, join reordering, index selection — with cost annotations on every operator.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">query planning</span></div>
+    </a>
+    <a class="card" href="02-mini-db/">
+      <span class="kind">python</span>
+      <span class="num">№ 02</span>
+      <h3>Mini DB Engine</h3>
+      <p>A SQL-subset engine with a tokenizer, parser, planner, and a Volcano-model executor (SeqScan, Filter, HashJoin, Aggregate, Sort). REPL + demo + tests. <span style="color:var(--ink)">python3 demo.py</span></p>
+      <div class="tags"><span class="tag sys">python</span><span class="tag">databases</span></div>
+    </a>
+    <a class="card" href="04-concurrency/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 04</span>
+      <h3>Concurrency Playground</h3>
+      <p>Race conditions, producer–consumer, dining philosophers, mutex vs lock-free — all animated as cooperatively-scheduled "threads" you can play, pause, and step.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">concurrency</span></div>
+    </a>
+    <a class="card" href="03-distributed-cache/">
+      <span class="kind">python</span>
+      <span class="num">№ 03</span>
+      <h3>Distributed Cache</h3>
+      <p>Consistent-hashing ring with virtual nodes, LRU+TTL cache nodes over HTTP, replication with R/W quorum. Kill a node, watch reads survive; add one, measure how few keys move.</p>
+      <div class="tags"><span class="tag sys">python</span><span class="tag">distributed systems</span></div>
+    </a>
+    <a class="card" href="09-gpu-explainer/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 09</span>
+      <h3>How GPUs Run a Neural Net</h3>
+      <p>SIMT warps and divergence, the memory hierarchy, tiled GEMM, and inference vs training with KV-cache and batching. The substrate of the Alexa+ world.</p>
+      <div class="tags"><span class="tag web">html</span><span class="tag">gpu · cuda</span></div>
+    </a>
+    <a class="card" href="10-webgpu-wasm/index.html">
+      <span class="kind">web demo</span>
+      <span class="num">№ 10</span>
+      <h3>WebGPU Playground</h3>
+      <p>Real WGSL compute and render shaders in the browser — GPU vs CPU matmul timing, an animated fragment shader, a compute-driven particle system. (Chrome/Edge 113+.)</p>
+      <div class="tags"><span class="tag web">webgpu</span><span class="tag">wgsl</span></div>
+    </a>
+    <a class="card" href="28-binpack-nn/">
+      <span class="kind">python</span>
+      <span class="num">№ 28</span>
+      <h3>Bin-Packing: Heuristics vs a Net</h3>
+      <p>First-Fit, Best-Fit, First-Fit-Decreasing vs a tiny from-scratch network that learns a packing policy. Can a net beat the heuristic? Run it and see. <span style="color:var(--ink)">python3 demo.py</span></p>
+      <div class="tags"><span class="tag sys">python</span><span class="tag">NP-hard · ML</span></div>
+    </a>
+  </div>
+
+  <div class="seclabel">Tools &amp; notes</div>
+  <div class="grid">
+    <a class="card" href="22-linkedin-referral/README.md">
+      <span class="kind">n8n</span>
+      <span class="num">№ 22</span>
+      <h3>Referral Outreach Assistant</h3>
+      <p>An n8n workflow that drafts personalized referral messages and routes them to you for review — human-in-the-loop, never auto-sends, zero LinkedIn ban risk.</p>
+      <div class="tags"><span class="tag note">n8n · workflow</span></div>
+    </a>
+    <a class="card" href="15-julia-generics/NOTES.md">
+      <span class="kind">notes</span>
+      <span class="num">№ 15</span>
+      <h3>Julia Generics &amp; Dispatch</h3>
+      <p>Working notes on multiple dispatch, parametric types, type stability, and the interface pattern — the mental model shift from C++/Java OOP.</p>
+      <div class="tags"><span class="tag note">reference</span></div>
+    </a>
+  </div>
+
+  <footer>
+    <span>THE PLAYGROUND · BUILT 2026 · INDIA</span>
+    <span>NIKUNJ GOYAL</span>
+  </footer>
+</div>
+<script>
+const root=document.documentElement;
+document.getElementById("themeToggle").querySelectorAll("button").forEach(b=>{b.onclick=()=>{root.setAttribute("data-theme",b.dataset.t);document.getElementById("themeToggle").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));};});
+</script>
+</body>
+</html>

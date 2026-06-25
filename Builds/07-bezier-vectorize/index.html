@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Curves Under the Pixels — Bézier &amp; Vectorization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0E1220;--surface:#161B2E;--surface-2:#1E2540;--line:#29314F;--line-soft:#20273f;
+    --ink:#ECE7DA;--ink-dim:#8C93AD;--ink-faint:#5A6080;--gold:#E8B24B;--gold-soft:rgba(232,178,75,.14);
+    --buy:#38C6A0;--sell:#E8675A;
+    --display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+    --mono:"IBM Plex Mono","SF Mono",ui-monospace,monospace;
+    --body:"IBM Plex Sans",system-ui,sans-serif;--radius:10px;
+  }
+  [data-theme="light"]{--bg:#F4F1E8;--surface:#FFFFFF;--surface-2:#F1EDE1;--line:#DCD6C6;--line-soft:#E8E3D5;--ink:#20242F;--ink-dim:#5C6276;--ink-faint:#9197A8;--gold:#B47D1E;--gold-soft:rgba(180,125,30,.14);--buy:#1B9C77;--sell:#CC4636;}
+  @media (prefers-color-scheme:light){[data-theme="system"]{--bg:#F4F1E8;--surface:#FFFFFF;--surface-2:#F1EDE1;--line:#DCD6C6;--line-soft:#E8E3D5;--ink:#20242F;--ink-dim:#5C6276;--ink-faint:#9197A8;--gold:#B47D1E;--gold-soft:rgba(180,125,30,.14);--buy:#1B9C77;--sell:#CC4636;}}
+  *{box-sizing:border-box;}html,body{margin:0;}
+  body{background:radial-gradient(1200px 600px at 80% -10%,var(--gold-soft),transparent 60%),var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;transition:background .2s,color .2s;}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 22px 56px;}
+  .masthead{display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px;}
+  .mark{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:27px;line-height:1;}
+  .mark .accent{color:var(--gold);}
+  .tagline{font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+  .tagline b{color:var(--ink);font-weight:500;}
+  .theme-toggle{margin-left:auto;align-self:center;display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px;}
+  .theme-toggle button{appearance:none;cursor:pointer;background:transparent;border:none;color:var(--ink-dim);font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:6px;}
+  .theme-toggle button.active{background:var(--gold);color:#2a1f06;font-weight:600;}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px;}
+  .tab{appearance:none;cursor:pointer;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px 11px;color:var(--ink-dim);display:flex;flex-direction:column;gap:4px;min-height:60px;transition:.15s;}
+  .tab:hover{border-color:var(--ink-faint);color:var(--ink);}
+  .tab[aria-selected="true"]{background:linear-gradient(180deg,var(--surface-2),var(--surface));border-color:var(--gold);color:var(--ink);}
+  .tab .roman{font-family:var(--display);font-weight:600;font-size:12px;color:var(--ink-faint);letter-spacing:.06em;}
+  .tab[aria-selected="true"] .roman{color:var(--gold);}
+  .tab .nm{font-size:13.5px;font-weight:500;}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:18px;}
+  .panel-h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);padding:13px 16px;border-bottom:1px solid var(--line-soft);}
+  .panel-b{padding:16px;}
+  h1.title{font-family:var(--display);font-weight:600;font-size:20px;margin:0 0 4px;}
+  p.desc{margin:0;color:var(--ink-dim);font-size:14px;line-height:1.65;}
+  .formula{font-family:var(--mono);font-size:13px;color:var(--gold);background:var(--gold-soft);border-radius:6px;padding:8px 12px;margin-top:12px;display:inline-block;}
+  canvas{display:block;width:100%;border-radius:8px;background:var(--surface-2);border:1px solid var(--line-soft);touch-action:none;}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+  button.act{appearance:none;cursor:pointer;font-family:var(--mono);font-size:12px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 14px;}
+  button.act:hover{border-color:var(--gold);}
+  button.act.primary{background:var(--gold);color:#2a1f06;font-weight:600;border-color:var(--gold);}
+  .rng{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);}
+  .readout{font-family:var(--mono);font-size:12px;color:var(--ink-dim);background:var(--surface-2);border:1px solid var(--line-soft);border-radius:8px;padding:12px 14px;margin-top:14px;line-height:1.6;}
+  .readout b{color:var(--gold);}
+  .hide{display:none;}
+  footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="mark">●&nbsp;Nikunj<span class="accent">Goyal</span></div>
+      <div class="tagline">CURVES UNDER THE PIXELS — <b>the math that turns dots into shapes</b></div>
+    </div>
+    <div class="theme-toggle" id="themeToggle">
+      <button data-t="light">LIGHT</button><button data-t="dark">DARK</button><button data-t="system" class="active">SYSTEM</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab" data-v="bezier" aria-selected="true"><span class="roman">№ I</span><span class="nm">Bézier — de Casteljau</span></button>
+    <button class="tab" data-v="fit"><span class="roman">№ II</span><span class="nm">Curve fitting &amp; simplify</span></button>
+    <button class="tab" data-v="trace"><span class="roman">№ III</span><span class="nm">Raster → Vector trace</span></button>
+  </div>
+
+  <!-- BEZIER -->
+  <section id="view-bezier">
+    <div class="panel">
+      <div class="panel-h">PROBLEM</div>
+      <div class="panel-b">
+        <h1 class="title">A cubic Bézier, built by repeated linear interpolation</h1>
+        <p class="desc">Drag the four control points. The curve is traced by the de Casteljau algorithm: nest <code>lerp</code>s between points, and the single surviving point at parameter <i>t</i> rides the curve. Move the <b>t</b> slider to watch the scaffolding collapse onto the curve. This is the primitive under every vector graphic — the thing you drag a handle on in Illustrator.</p>
+        <div class="formula">P(t) = (1−t)³P₀ + 3(1−t)²t·P₁ + 3(1−t)t²·P₂ + t³P₃</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">CANVAS — DRAG THE CONTROL POINTS</div>
+      <div class="panel-b">
+        <canvas id="cv1" height="420"></canvas>
+        <div class="controls">
+          <div class="rng">t = <span id="tval">0.50</span><input type="range" id="tslider" min="0" max="1000" value="500"></div>
+          <button class="act" id="animT">▶ Sweep t</button>
+          <button class="act" id="toggleHull">Toggle scaffolding</button>
+          <button class="act" id="resetPts">Reset points</button>
+        </div>
+        <div class="readout" id="ro1"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIT -->
+  <section id="view-fit" class="hide">
+    <div class="panel">
+      <div class="panel-h">PROBLEM</div>
+      <div class="panel-b">
+        <h1 class="title">From a noisy hand-drawn stroke to a clean curve</h1>
+        <p class="desc">Draw a freehand stroke on the canvas. It captures dozens of jittery sample points. Then watch the <b>Ramer–Douglas–Peucker</b> simplification throw away points that don't matter (controlled by ε), and a least-squares Bézier fit replace the polyline with smooth curves — exactly the pipeline behind "pencil → vector path."</p>
+        <div class="formula">RDP: keep the point of max perpendicular distance &gt; ε; recurse on each half</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">CANVAS — DRAW A STROKE</div>
+      <div class="panel-b">
+        <canvas id="cv2" height="420"></canvas>
+        <div class="controls">
+          <button class="act primary" id="clearDraw">Clear &amp; draw again</button>
+          <div class="rng">ε = <span id="epsval">4</span><input type="range" id="eps" min="1" max="40" value="4"></div>
+          <button class="act" id="toggleRaw">Toggle raw samples</button>
+        </div>
+        <div class="readout" id="ro2">Draw something with your mouse / finger.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRACE -->
+  <section id="view-trace" class="hide">
+    <div class="panel">
+      <div class="panel-h">PROBLEM</div>
+      <div class="panel-b">
+        <h1 class="title">Raster → Vector: tracing a bitmap into paths</h1>
+        <p class="desc">A tiny black-and-white bitmap (paint your own below). The tracer: (1) thresholds to a binary image, (2) walks the boundary between black and white with the <b>Moore neighbour-tracing</b> contour algorithm, (3) simplifies the contour with RDP, and (4) emits an SVG path. This is image-to-vector in miniature — the heart of "Image Trace".</p>
+        <div class="formula">threshold → contour follow → simplify → SVG &lt;path d="M … L … Z"&gt;</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">PAINT A SHAPE — THEN TRACE IT</div>
+      <div class="panel-b">
+        <canvas id="cv3" height="360"></canvas>
+        <div class="controls">
+          <button class="act primary" id="traceBtn">⮕ Trace to vector</button>
+          <button class="act" id="clearGrid">Clear grid</button>
+          <button class="act" id="blobBtn">Random blob</button>
+          <div class="rng">ε = <span id="epsval3">2</span><input type="range" id="eps3" min="1" max="12" value="2"></div>
+        </div>
+        <div class="readout" id="ro3">Paint cells (click/drag), then trace. The SVG path appears here.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>SERIES — THE MATH UNDER THE PIXELS</span><span>NIKUNJ GOYAL</span>
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* theme */
+const root=document.documentElement;
+$("themeToggle").querySelectorAll("button").forEach(b=>{b.onclick=()=>{root.setAttribute("data-theme",b.dataset.t);$("themeToggle").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));redrawAll();};});
+
+/* tabs */
+const views=["bezier","fit","trace"];
+$("tabs").querySelectorAll(".tab").forEach(t=>{t.onclick=()=>{
+  const v=t.dataset.v;
+  $("tabs").querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x===t?"true":"false"));
+  views.forEach(name=>$("view-"+name).classList.toggle("hide",name!==v));
+  redrawAll();
+};});
+
+function fitCanvas(cv){const r=cv.getBoundingClientRect();const dpr=window.devicePixelRatio||1;cv.width=r.width*dpr;cv.height=420*dpr;const ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);return ctx;}
+
+/* ============ 1. BEZIER / de Casteljau ============ */
+const cv1=$("cv1"); let ctx1;
+let pts=[]; let dragIdx=-1; let showHull=true; let tAnim=null;
+function defPts(){const w=cv1.getBoundingClientRect().width;return [[w*0.12,330],[w*0.32,90],[w*0.66,90],[w*0.88,330]];}
+function lerp(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
+function deCasteljau(P,t){let lvls=[P];let cur=P;while(cur.length>1){const nx=[];for(let i=0;i<cur.length-1;i++)nx.push(lerp(cur[i],cur[i+1],t));lvls.push(nx);cur=nx;}return lvls;}
+function bezierAt(P,t){return deCasteljau(P,t).at(-1)[0];}
+function drawBezier(){
+  ctx1=ctx1||fitCanvas(cv1);const w=cv1.getBoundingClientRect().width;ctx1.clearRect(0,0,w,420);
+  const t=+$("tslider").value/1000;$("tval").textContent=t.toFixed(2);
+  // full curve
+  ctx1.strokeStyle=css("--gold");ctx1.lineWidth=2.5;ctx1.beginPath();
+  for(let s=0;s<=1.0001;s+=0.01){const p=bezierAt(pts,s);if(s===0)ctx1.moveTo(p[0],p[1]);else ctx1.lineTo(p[0],p[1]);}ctx1.stroke();
+  if(showHull){
+    const lvls=deCasteljau(pts,t);const cols=[css("--ink-faint"),css("--buy"),css("--sell")];
+    lvls.forEach((lv,li)=>{
+      if(lv.length>1){ctx1.strokeStyle=li===0?css("--line"):cols[(li-1)%cols.length];ctx1.lineWidth=1.5;ctx1.beginPath();lv.forEach((p,i)=>i?ctx1.lineTo(p[0],p[1]):ctx1.moveTo(p[0],p[1]));ctx1.stroke();}
+      lv.forEach(p=>{ctx1.fillStyle=li===0?css("--ink"):cols[(li-1)%cols.length];ctx1.beginPath();ctx1.arc(p[0],p[1],li===0?6:4,0,7);ctx1.fill();});
+    });
+  }
+  const cur=bezierAt(pts,t);ctx1.fillStyle=css("--gold");ctx1.beginPath();ctx1.arc(cur[0],cur[1],7,0,7);ctx1.fill();
+  ctx1.strokeStyle=css("--bg");ctx1.lineWidth=2;ctx1.stroke();
+  // labels
+  ctx1.fillStyle=css("--ink-faint");ctx1.font="11px "+css("--mono");
+  pts.forEach((p,i)=>ctx1.fillText("P"+i,p[0]+9,p[1]-9));
+  $("ro1").innerHTML=`At t=<b>${t.toFixed(2)}</b>, the curve point is (<b>${cur[0].toFixed(0)}, ${cur[1].toFixed(0)}</b>). The de Casteljau scaffolding nests ${pts.length-1} levels of linear interpolation — drag any Pᵢ and the whole curve re-solves in real time.`;
+}
+function ptAt(cv,e){const r=cv.getBoundingClientRect();const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;return [cx,cy];}
+cv1.addEventListener("pointerdown",e=>{const[x,y]=ptAt(cv1,e);dragIdx=pts.findIndex(p=>Math.hypot(p[0]-x,p[1]-y)<16);});
+cv1.addEventListener("pointermove",e=>{if(dragIdx<0)return;pts[dragIdx]=ptAt(cv1,e);drawBezier();});
+window.addEventListener("pointerup",()=>dragIdx=-1);
+$("tslider").addEventListener("input",drawBezier);
+$("toggleHull").onclick=()=>{showHull=!showHull;drawBezier();};
+$("resetPts").onclick=()=>{pts=defPts();drawBezier();};
+$("animT").onclick=()=>{if(tAnim){clearInterval(tAnim);tAnim=null;$("animT").textContent="▶ Sweep t";return;}$("animT").textContent="❚❚ Stop";let v=0,dir=8;tAnim=setInterval(()=>{v+=dir;if(v>=1000||v<=0)dir*=-1;$("tslider").value=v;drawBezier();},16);};
+
+/* ============ 2. CURVE FITTING (RDP) ============ */
+const cv2=$("cv2");let ctx2;let raw=[];let drawing=false;let showRaw=true;
+function perpDist(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1];const l=Math.hypot(dx,dy)||1;return Math.abs((p[0]-a[0])*dy-(p[1]-a[1])*dx)/l;}
+function rdp(points,eps){if(points.length<3)return points.slice();let dmax=0,idx=0;for(let i=1;i<points.length-1;i++){const d=perpDist(points[i],points[0],points.at(-1));if(d>dmax){dmax=d;idx=i;}}if(dmax>eps){const l=rdp(points.slice(0,idx+1),eps);const r=rdp(points.slice(idx),eps);return l.slice(0,-1).concat(r);}return [points[0],points.at(-1)];}
+function drawFit(){
+  ctx2=ctx2||fitCanvas(cv2);const w=cv2.getBoundingClientRect().width;ctx2.clearRect(0,0,w,420);
+  if(showRaw&&raw.length){ctx2.strokeStyle=css("--line");ctx2.lineWidth=1.5;ctx2.beginPath();raw.forEach((p,i)=>i?ctx2.lineTo(p[0],p[1]):ctx2.moveTo(p[0],p[1]));ctx2.stroke();ctx2.fillStyle=css("--ink-faint");raw.forEach(p=>{ctx2.beginPath();ctx2.arc(p[0],p[1],1.8,0,7);ctx2.fill();});}
+  if(raw.length>2){const eps=+$("eps").value;const simp=rdp(raw,eps);
+    ctx2.strokeStyle=css("--gold");ctx2.lineWidth=2.5;ctx2.beginPath();simp.forEach((p,i)=>i?ctx2.lineTo(p[0],p[1]):ctx2.moveTo(p[0],p[1]));ctx2.stroke();
+    ctx2.fillStyle=css("--buy");simp.forEach(p=>{ctx2.beginPath();ctx2.arc(p[0],p[1],4,0,7);ctx2.fill();});
+    $("ro2").innerHTML=`Raw stroke: <b>${raw.length}</b> sample points → simplified to <b>${simp.length}</b> anchor points at ε=<b>${eps}</b>. That's a <b>${(100*(1-simp.length/raw.length)).toFixed(0)}%</b> reduction with the shape preserved.`;
+  }
+}
+function cv2pt(e){const r=cv2.getBoundingClientRect();return[(e.touches?e.touches[0].clientX:e.clientX)-r.left,(e.touches?e.touches[0].clientY:e.clientY)-r.top];}
+cv2.addEventListener("pointerdown",e=>{drawing=true;raw=[cv2pt(e)];});
+cv2.addEventListener("pointermove",e=>{if(!drawing)return;const p=cv2pt(e);if(!raw.length||Math.hypot(p[0]-raw.at(-1)[0],p[1]-raw.at(-1)[1])>3)raw.push(p);drawFit();});
+window.addEventListener("pointerup",()=>drawing=false);
+$("eps").addEventListener("input",()=>{$("epsval").textContent=$("eps").value;drawFit();});
+$("clearDraw").onclick=()=>{raw=[];ctx2=ctx2||fitCanvas(cv2);ctx2.clearRect(0,0,cv2.getBoundingClientRect().width,420);$("ro2").textContent="Draw something with your mouse / finger.";};
+$("toggleRaw").onclick=()=>{showRaw=!showRaw;drawFit();};
+
+/* ============ 3. RASTER -> VECTOR TRACE ============ */
+const cv3=$("cv3");let ctx3;const GW=28,GH=22;let grid=[];let cell=14;let painting=0;
+function initGrid(){grid=Array.from({length:GH},()=>Array(GW).fill(0));}
+function drawGrid(contour){
+  ctx3=ctx3||cv3.getContext("2d");const r=cv3.getBoundingClientRect();const dpr=window.devicePixelRatio||1;
+  cv3.width=r.width*dpr;cv3.height=360*dpr;ctx3.setTransform(dpr,0,0,dpr,0,0);
+  cell=Math.min(r.width/GW,360/GH);const ox=(r.width-cell*GW)/2,oy=(360-cell*GH)/2;
+  ctx3.clearRect(0,0,r.width,360);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){ctx3.fillStyle=grid[y][x]?css("--ink"):css("--surface-2");ctx3.fillRect(ox+x*cell+0.5,oy+y*cell+0.5,cell-1,cell-1);}
+  if(contour&&contour.length){ctx3.strokeStyle=css("--gold");ctx3.lineWidth=2.5;ctx3.beginPath();contour.forEach((p,i)=>{const X=ox+p[0]*cell,Y=oy+p[1]*cell;i?ctx3.lineTo(X,Y):ctx3.moveTo(X,Y);});ctx3.closePath();ctx3.stroke();
+    ctx3.fillStyle=css("--buy");contour.forEach(p=>{ctx3.beginPath();ctx3.arc(ox+p[0]*cell,oy+p[1]*cell,3,0,7);ctx3.fill();});}
+  cv3._ox=ox;cv3._oy=oy;
+}
+function gridCell(e){const r=cv3.getBoundingClientRect();const x=Math.floor(((e.touches?e.touches[0].clientX:e.clientX)-r.left-cv3._ox)/cell);const y=Math.floor(((e.touches?e.touches[0].clientY:e.clientY)-r.top-cv3._oy)/cell);return[x,y];}
+cv3.addEventListener("pointerdown",e=>{const[x,y]=gridCell(e);if(x<0||y<0||x>=GW||y>=GH)return;painting=grid[y][x]?-1:1;grid[y][x]=painting>0?1:0;drawGrid();});
+cv3.addEventListener("pointermove",e=>{if(!painting)return;const[x,y]=gridCell(e);if(x<0||y<0||x>=GW||y>=GH)return;grid[y][x]=painting>0?1:0;drawGrid();});
+window.addEventListener("pointerup",()=>painting=0);
+function mooreTrace(){
+  // find first filled cell
+  let start=null;for(let y=0;y<GH&&!start;y++)for(let x=0;x<GW;x++){if(grid[y][x]){start=[x,y];break;}}
+  if(!start)return [];
+  const inside=(x,y)=>x>=0&&y>=0&&x<GW&&y<GH&&grid[y][x];
+  // Moore-neighbor tracing on corners (treat cells as pixels, trace cell-corner boundary via marching)
+  // Simpler robust approach: square-tracing on cell grid producing corner polygon
+  const dirs=[[1,0],[0,1],[-1,0],[0,-1]]; // R D L U
+  // boundary follow on pixel centers
+  const contour=[];let [cx,cy]=start;let d=0;const visited=new Set();
+  // Use radial/Moore: track around using 8-neighborhood
+  const N8=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+  let b=6; // backtrack dir index
+  const sx=start[0],sy=start[1];let px=sx,py=sy;let steps=0;contour.push([px,py]);
+  do{
+    let found=false;
+    for(let k=0;k<8;k++){const di=(b+1+k)%8;const nx=px+N8[di][0],ny=py+N8[di][1];if(inside(nx,ny)){px=nx;py=ny;b=(di+4+1)%8;b=(di+5)%8;contour.push([px,py]);found=true;break;}}
+    if(!found)break;steps++;
+  }while((px!==sx||py!==sy)&&steps<4000);
+  return contour;
+}
+function toSVGPath(poly){if(!poly.length)return"";return "M "+poly.map((p,i)=>`${p[0]} ${p[1]}`).join(i=>"")+ "";}
+$("traceBtn").onclick=()=>{
+  const c=mooreTrace();if(c.length<3){$("ro3").innerHTML="Paint a connected shape first.";return;}
+  const eps=+$("eps3").value;const simp=rdp(c,eps);
+  drawGrid(simp);
+  const d="M "+simp.map(p=>`${p[0]} ${p[1]}`).join(" L ")+" Z";
+  $("ro3").innerHTML=`Boundary walked: <b>${c.length}</b> contour points → RDP-simplified to <b>${simp.length}</b> anchors (ε=${eps}).<br><br><span style="color:var(--gold)">&lt;path d="${d}" /&gt;</span>`;
+};
+$("clearGrid").onclick=()=>{initGrid();drawGrid();$("ro3").textContent="Paint cells (click/drag), then trace.";};
+$("blobBtn").onclick=()=>{initGrid();const cx=GW/2,cy=GH/2;for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const r=Math.hypot((x-cx)/(GW*0.32),(y-cy)/(GH*0.34));const wob=0.18*Math.sin(Math.atan2(y-cy,x-cx)*3);if(r<1+wob)grid[y][x]=1;}drawGrid();};
+
+/* redraw dispatch */
+function redrawAll(){
+  if(!$("view-bezier").classList.contains("hide")){if(!pts.length)pts=defPts();ctx1=fitCanvas(cv1);drawBezier();}
+  if(!$("view-fit").classList.contains("hide")){ctx2=fitCanvas(cv2);drawFit();}
+  if(!$("view-trace").classList.contains("hide")){if(!grid.length)initGrid();drawGrid();}
+}
+window.addEventListener("resize",()=>{ctx1=ctx2=null;redrawAll();});
+pts=defPts();initGrid();redrawAll();
+</script>
+</body>
+</html>

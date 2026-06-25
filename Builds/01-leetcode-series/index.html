@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DP, Played Out — Dynamic Programming Visualizer Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0E1220; --surface: #161B2E; --surface-2: #1E2540;
+    --line: #29314F; --line-soft: #20273f;
+    --ink: #ECE7DA; --ink-dim: #8C93AD; --ink-faint: #5A6080;
+    --gold: #E8B24B; --gold-soft: rgba(232, 178, 75, 0.14);
+    --buy: #38C6A0; --sell: #E8675A;
+    --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --radius: 10px;
+  }
+  [data-theme="light"] {
+    --bg: #F4F1E8; --surface: #FFFFFF; --surface-2: #F1EDE1;
+    --line: #DCD6C6; --line-soft: #E8E3D5;
+    --ink: #20242F; --ink-dim: #5C6276; --ink-faint: #9197A8;
+    --gold: #B47D1E; --gold-soft: rgba(180, 125, 30, 0.14);
+    --buy: #1B9C77; --sell: #CC4636;
+  }
+  @media (prefers-color-scheme: light) {
+    [data-theme="system"] {
+      --bg: #F4F1E8; --surface: #FFFFFF; --surface-2: #F1EDE1;
+      --line: #DCD6C6; --line-soft: #E8E3D5;
+      --ink: #20242F; --ink-dim: #5C6276; --ink-faint: #9197A8;
+      --gold: #B47D1E; --gold-soft: rgba(180, 125, 30, 0.14);
+      --buy: #1B9C77; --sell: #CC4636;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, var(--gold-soft), transparent 60%), var(--bg);
+    color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background .2s, color .2s;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 22px 56px; }
+  .masthead {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .mark { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; font-size: 27px; line-height: 1; color: var(--ink); }
+  .mark .accent { color: var(--gold); }
+  .tagline { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); letter-spacing: 0.02em; }
+  .tagline b { color: var(--ink); font-weight: 500; }
+  .theme-toggle {
+    margin-left: auto; align-self: center; display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    appearance: none; cursor: pointer; background: transparent; border: none;
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px;
+    padding: 5px 10px; border-radius: 6px; transition: background .15s, color .15s;
+  }
+  .theme-toggle button:hover { color: var(--ink); }
+  .theme-toggle button.active { background: var(--gold); color: #2a1f06; font-weight: 600; }
+  .variants { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 22px; }
+  .vtab {
+    appearance: none; cursor: pointer; text-align: left; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px 11px;
+    color: var(--ink-dim); transition: border-color .15s, background .15s, color .15s, transform .1s;
+    display: flex; flex-direction: column; gap: 4px; min-height: 64px;
+  }
+  .vtab:hover { border-color: var(--ink-faint); color: var(--ink); transform: translateY(-1px); }
+  .vtab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .vtab .roman { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .vtab .vname { font-family: var(--body); font-size: 13.5px; font-weight: 500; line-height: 1.2; }
+  .vtab[aria-selected="true"] { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border-color: var(--gold); color: var(--ink); }
+  .vtab[aria-selected="true"] .roman { color: var(--gold); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 18px; }
+  .panel-h { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); padding: 13px 16px; border-bottom: 1px solid var(--line-soft); }
+  .panel-b { padding: 16px; }
+  h1.title { font-family: var(--display); font-weight: 600; font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  #statement { margin: 0; color: var(--ink-dim); font-size: 14px; line-height: 1.65; }
+  .recur { font-family: var(--mono); font-size: 13px; color: var(--gold); background: var(--gold-soft); border-radius: 6px; padding: 8px 12px; margin-top: 12px; display: inline-block; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .controls input[type=text] { font-family: var(--mono); font-size: 13px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 8px 11px; width: 280px; }
+  .controls input[type=text]:focus { outline: none; border-color: var(--gold); }
+  button.act { appearance: none; cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 8px 14px; transition: border-color .15s, background .15s; }
+  button.act:hover { border-color: var(--gold); }
+  button.act.primary { background: var(--gold); color: #2a1f06; font-weight: 600; border-color: var(--gold); }
+  .speed { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+  .cells { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .cell { min-width: 46px; height: 52px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--mono); font-size: 14px; position: relative; transition: all .25s; }
+  .cell .idx { position: absolute; top: 3px; left: 5px; font-size: 9px; color: var(--ink-faint); }
+  .cell .val { font-weight: 600; }
+  .cell.active { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); transform: translateY(-3px); }
+  .cell.done { border-color: var(--buy); color: var(--buy); }
+  .cell.cur { background: var(--gold-soft); }
+  .dp-row { margin-top: 14px; }
+  .dp-row .lab { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .log { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); background: var(--surface-2); border-radius: 8px; padding: 12px 14px; min-height: 44px; line-height: 1.6; border: 1px solid var(--line-soft); }
+  .log b { color: var(--gold); font-weight: 600; }
+  .answer { font-family: var(--display); font-size: 17px; font-weight: 600; color: var(--buy); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .two { grid-template-columns: 1fr; } .variants { grid-template-columns: repeat(2,1fr);} }
+  .complexity { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; color: var(--ink-dim); margin-top: 10px; }
+  .complexity b { color: var(--ink); }
+  footer { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 16px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="mark">●&nbsp;Nikunj<span class="accent">Goyal</span></div>
+      <div class="tagline">DP, PLAYED OUT — <b>dynamic programming you can watch fill in</b></div>
+    </div>
+    <div class="theme-toggle" id="themeToggle">
+      <button data-t="light">LIGHT</button>
+      <button data-t="dark">DARK</button>
+      <button data-t="system" class="active">SYSTEM</button>
+    </div>
+  </div>
+
+  <div class="variants" id="variants"></div>
+
+  <div class="panel">
+    <div class="panel-h" id="probHdr">PROBLEM</div>
+    <div class="panel-b">
+      <h1 class="title" id="probTitle"></h1>
+      <p id="statement"></p>
+      <div class="recur" id="recur"></div>
+      <div class="complexity" id="complexity"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h">INPUT &amp; CONTROLS</div>
+    <div class="panel-b">
+      <div class="controls">
+        <input type="text" id="inputBox" />
+        <button class="act" id="loadBtn">Load</button>
+        <button class="act" id="randBtn">Randomize</button>
+        <button class="act primary" id="playBtn">▶ Play</button>
+        <button class="act" id="stepBtn">Step ▸</button>
+        <button class="act" id="resetBtn">Reset</button>
+        <div class="speed">SPEED <input type="range" id="speed" min="120" max="1100" value="520" /></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h">VISUALIZATION</div>
+    <div class="panel-b">
+      <div class="dp-row">
+        <div class="lab" id="arrLab">INPUT</div>
+        <div class="cells" id="arrCells"></div>
+      </div>
+      <div class="dp-row">
+        <div class="lab" id="dpLab">DP TABLE</div>
+        <div class="cells" id="dpCells"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h">TRACE</div>
+    <div class="panel-b">
+      <div class="log" id="log">Pick a problem, hit Play, and watch the table fill.</div>
+    </div>
+  </div>
+
+  <footer>
+    <span>SERIES — ALGORITHMS YOU CAN PLAY WITH · № 01</span>
+    <span>NIKUNJ GOYAL</span>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   DP, Played Out — a series of dynamic-programming visualizers.
+   Same theme + shell as the Optimal Trader piece.
+   Each problem defines: statement, recurrence, parser, randomizer,
+   and a generator that yields animation steps.
+   ============================================================ */
+
+const PROBLEMS = {
+  jump: {
+    name: "Jump Game",
+    roman: "I",
+    title: "Jump Game — can you reach the end?",
+    statement: "Given an array where each value is the max jump length from that index, determine whether you can reach the last index starting from index 0.",
+    recur: "reach = max(reach, i + nums[i]); stuck if i > reach",
+    complexity: ["Time: <b>O(n)</b>", "Space: <b>O(1)</b>", "Pattern: <b>greedy reach</b>"],
+    sample: "2, 3, 1, 1, 4",
+    rand: () => Array.from({length: 6 + (Math.random()*4|0)}, () => Math.random()*4|0),
+    dpLabel: "FARTHEST REACH",
+    *run(nums) {
+      let reach = 0;
+      const dp = nums.map(()=>"");
+      for (let i = 0; i < nums.length; i++) {
+        if (i > reach) {
+          yield { i, dp:[...dp], log:`Index <b>${i}</b> &gt; reach <b>${reach}</b> — <b>stuck</b>. Cannot proceed.`, answer:"FALSE — unreachable", bad:i };
+          return;
+        }
+        const cand = i + nums[i];
+        reach = Math.max(reach, cand);
+        dp[i] = reach;
+        yield { i, dp:[...dp], log:`At <b>${i}</b> (jump ${nums[i]}): reach = max(${reach===cand?'·':reach}, ${i}+${nums[i]}) = <b>${reach}</b>`, answer: reach>=nums.length-1?`TRUE — reach ${reach} covers last index ${nums.length-1}`:null };
+        if (reach >= nums.length - 1) {
+          yield { i, dp:[...dp], log:`Reach <b>${reach}</b> ≥ last index <b>${nums.length-1}</b> — <b>made it.</b>`, answer:"TRUE — end is reachable", good:true };
+          return;
+        }
+      }
+      yield { i: nums.length-1, dp:[...dp], log:"Scanned all indices.", answer: reach>=nums.length-1?"TRUE":"FALSE", good: reach>=nums.length-1 };
+    }
+  },
+
+  robber: {
+    name: "House Robber",
+    roman: "II",
+    title: "House Robber — max loot, no two adjacent",
+    statement: "Houses in a row each hold some cash. You cannot rob two adjacent houses. Maximize the total you can rob.",
+    recur: "dp[i] = max(dp[i-1], dp[i-2] + nums[i])",
+    complexity: ["Time: <b>O(n)</b>", "Space: <b>O(1)</b> rolling", "Pattern: <b>pick / skip</b>"],
+    sample: "2, 7, 9, 3, 1",
+    rand: () => Array.from({length: 5 + (Math.random()*4|0)}, () => 1 + (Math.random()*9|0)),
+    dpLabel: "dp[i] = BEST LOOT UP TO i",
+    *run(nums) {
+      const dp = nums.map(()=>"");
+      for (let i = 0; i < nums.length; i++) {
+        const skip = i>=1 ? dp[i-1] : 0;
+        const take = (i>=2 ? dp[i-2] : 0) + nums[i];
+        dp[i] = Math.max(skip, take);
+        const chose = take >= skip ? "ROB it" : "SKIP it";
+        yield { i, dp:[...dp], log:`House <b>${i}</b> ($${nums[i]}): skip=${skip}, rob=${take} → <b>${chose}</b>, dp[${i}]=<b>${dp[i]}</b>` };
+      }
+      yield { i: nums.length-1, dp:[...dp], log:`Max loot = <b>${dp[nums.length-1]}</b>`, answer:`MAX LOOT = $${dp[nums.length-1]}`, good:true };
+    }
+  },
+
+  stone: {
+    name: "Stone Game",
+    roman: "III",
+    title: "Stone Game — optimal play, both greedy-smart",
+    statement: "Piles of stones in a row. Two players alternately take a pile from either end. Both play optimally. Compute Player 1's score margin (their stones minus opponent's) under perfect play.",
+    recur: "dp[i][j] = max(a[i]-dp[i+1][j], a[j]-dp[i][j-1])",
+    complexity: ["Time: <b>O(n²)</b>", "Space: <b>O(n²)</b>", "Pattern: <b>interval / minimax</b>"],
+    sample: "5, 3, 4, 5",
+    rand: () => Array.from({length: 4 + (Math.random()*2|0)}, () => 1 + (Math.random()*8|0)),
+    dpLabel: "dp[i][j] = BEST MARGIN ON a[i..j]",
+    *run(nums) {
+      const n = nums.length;
+      const dp = Array.from({length:n}, ()=>Array(n).fill(0));
+      // flatten last diagonal for the strip display: show dp[0][k]
+      for (let i=0;i<n;i++){ dp[i][i]=nums[i]; }
+      const flat = ()=>nums.map((_,k)=> dp[0][k]!==0||k===0 ? dp[0][k] : "");
+      yield { i:0, dp: nums.map((v,k)=>k===0?v:""), log:`Base: single pile dp[i][i] = its value.` };
+      for (let len=2; len<=n; len++) {
+        for (let i=0; i+len-1<n; i++) {
+          const j=i+len-1;
+          const takeLeft = nums[i] - dp[i+1][j];
+          const takeRight = nums[j] - dp[i][j-1];
+          dp[i][j] = Math.max(takeLeft, takeRight);
+          const side = takeLeft>=takeRight ? `take left (${nums[i]})` : `take right (${nums[j]})`;
+          yield { i: j, dp: flat(), log:`a[${i}..${j}]: ${side} → margin dp[${i}][${j}]=<b>${dp[i][j]}</b>` };
+        }
+      }
+      const m = dp[0][n-1];
+      yield { i:n-1, dp:flat(), log:`Player 1 margin under optimal play = <b>${m}</b> → ${m>0?'P1 wins':m<0?'P2 wins':'tie'}`, answer:`MARGIN = ${m>0?'+':''}${m} (${m>0?'P1 wins':m<0?'P2 wins':'tie'})`, good:m>=0 };
+    }
+  },
+
+  climb: {
+    name: "Climbing Stairs",
+    roman: "IV",
+    title: "Climbing Stairs — Fibonacci in disguise",
+    statement: "You climb a staircase of n steps, taking 1 or 2 steps at a time. How many distinct ways to reach the top? (It's the Fibonacci sequence — watch it emerge.)",
+    recur: "dp[i] = dp[i-1] + dp[i-2]",
+    complexity: ["Time: <b>O(n)</b>", "Space: <b>O(1)</b> rolling", "Pattern: <b>linear recurrence</b>"],
+    sample: "8",
+    rand: () => [4 + (Math.random()*8|0)],
+    dpLabel: "dp[i] = WAYS TO REACH STEP i",
+    parseOverride: (s) => { const n = Math.max(1, Math.min(18, parseInt(s)||8)); return Array.from({length:n+1},(_, k)=>k); },
+    arrLabelOverride: "STEPS 0..n",
+    *run(steps) {
+      const n = steps.length - 1;
+      const dp = steps.map(()=>"");
+      dp[0] = 1;
+      yield { i:0, dp:[...dp], log:`dp[0]=1 (one way to stand at the bottom).` };
+      if (n>=1){ dp[1]=1; yield { i:1, dp:[...dp], log:`dp[1]=1 (single step).` }; }
+      for (let i=2;i<=n;i++){
+        dp[i]=dp[i-1]+dp[i-2];
+        yield { i, dp:[...dp], log:`dp[${i}] = dp[${i-1}] + dp[${i-2}] = ${dp[i-1]} + ${dp[i-2]} = <b>${dp[i]}</b>` };
+      }
+      yield { i:n, dp:[...dp], log:`Ways to climb ${n} steps = <b>${dp[n]}</b> (the ${n+1}th Fibonacci number).`, answer:`${dp[n]} WAYS`, good:true };
+    }
+  }
+};
+
+/* ---------------- engine ---------------- */
+let curKey = "jump", gen = null, timer = null, lastInput = [], playing = false;
+
+const $ = id => document.getElementById(id);
+const variantsEl = $("variants");
+
+function buildTabs(){
+  variantsEl.innerHTML = "";
+  Object.entries(PROBLEMS).forEach(([key,p])=>{
+    const b = document.createElement("button");
+    b.className="vtab"; b.setAttribute("role","tab");
+    b.setAttribute("aria-selected", key===curKey ? "true":"false");
+    b.innerHTML = `<span class="roman">№ ${p.roman}</span><span class="vname">${p.name}</span>`;
+    b.onclick = ()=> selectProblem(key);
+    variantsEl.appendChild(b);
+  });
+}
+
+function parseInput(p, s){
+  if (p.parseOverride) return p.parseOverride(s);
+  return s.split(/[\s,]+/).filter(x=>x.length).map(Number).filter(x=>!isNaN(x));
+}
+
+function selectProblem(key){
+  curKey = key; stop();
+  const p = PROBLEMS[key];
+  $("probTitle").textContent = p.title;
+  $("statement").textContent = p.statement;
+  $("recur").innerHTML = "recurrence&nbsp;&nbsp;" + p.recur;
+  $("complexity").innerHTML = p.complexity.map(c=>`<span>${c}</span>`).join("");
+  $("inputBox").value = p.sample;
+  $("dpLab").textContent = p.dpLabel;
+  $("arrLab").textContent = p.arrLabelOverride || "INPUT";
+  buildTabs();
+  loadInput();
+}
+
+function loadInput(){
+  const p = PROBLEMS[curKey];
+  lastInput = parseInput(p, $("inputBox").value);
+  resetRun();
+  renderArr(lastInput, -1);
+  renderDp(lastInput.map(()=> ""), -1);
+  $("log").innerHTML = `Loaded ${lastInput.length} values. Hit <b>Play</b> to fill the table.`;
+}
+
+function renderArr(arr, active){
+  const p = PROBLEMS[curKey];
+  const showVals = !(p.arrLabelOverride); // climb shows indices only
+  $("arrCells").innerHTML = arr.map((v,i)=>
+    `<div class="cell ${i===active?'active':''}"><span class="idx">${i}</span><span class="val">${showVals?v:i}</span></div>`
+  ).join("");
+}
+function renderDp(dp, active, good, bad){
+  $("dpCells").innerHTML = dp.map((v,i)=>{
+    let cls="cell";
+    if (i===active) cls+=" active cur";
+    else if (v!=="" && v!==undefined) cls+=" done";
+    if (bad===i) cls="cell active"; 
+    return `<div class="${cls}"><span class="idx">${i}</span><span class="val">${v===""||v===undefined?'·':v}</span></div>`;
+  }).join("");
+}
+
+function resetRun(){ stop(); gen=null; }
+function stop(){ playing=false; if(timer){clearTimeout(timer);timer=null;} $("playBtn").textContent="▶ Play"; }
+
+function ensureGen(){
+  if (!gen){
+    const p = PROBLEMS[curKey];
+    if (!lastInput.length) loadInput();
+    gen = p.run(lastInput.slice());
+  }
+}
+
+function stepOnce(){
+  ensureGen();
+  const r = gen.next();
+  if (r.done){ stop(); return false; }
+  const s = r.value;
+  renderArr(lastInput, s.i);
+  renderDp(s.dp, s.i, s.good, s.bad);
+  let html = s.log;
+  if (s.answer) html += ` &nbsp; <span class="answer">${s.answer}</span>`;
+  $("log").innerHTML = html;
+  return true;
+}
+
+function play(){
+  if (playing){ stop(); return; }
+  playing = true; $("playBtn").textContent="❚❚ Pause";
+  const tick = ()=>{
+    if (!playing) return;
+    const more = stepOnce();
+    if (more) timer = setTimeout(tick, 1220 - +$("speed").value);
+    else stop();
+  };
+  tick();
+}
+
+/* ---------------- wire up ---------------- */
+$("loadBtn").onclick = loadInput;
+$("randBtn").onclick = ()=>{ const p=PROBLEMS[curKey]; const a=p.rand(); $("inputBox").value = p.arrLabelOverride ? a[0] : a.join(", "); loadInput(); };
+$("playBtn").onclick = play;
+$("stepBtn").onclick = ()=>{ stop(); stepOnce(); };
+$("resetBtn").onclick = loadInput;
+$("inputBox").addEventListener("keydown", e=>{ if(e.key==="Enter") loadInput(); });
+
+/* theme toggle */
+const html = document.documentElement;
+$("themeToggle").querySelectorAll("button").forEach(b=>{
+  b.onclick = ()=>{
+    html.setAttribute("data-theme", b.dataset.t);
+    $("themeToggle").querySelectorAll("button").forEach(x=>x.classList.toggle("active", x===b));
+  };
+});
+
+selectProblem("jump");
+</script>
+</body>
+</html>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conv3D Explorer — 3D Convolutional Nets, Visualized</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0E1220;
+    --surface: #161B2E;
+    --surface-2: #1E2540;
+    --line: #29314F;
+    --line-soft: #20273f;
+    --ink: #ECE7DA;
+    --ink-dim: #8C93AD;
+    --ink-faint: #5A6080;
+    --gold: #E8B24B;
+    --gold-soft: rgba(232, 178, 75, 0.14);
+    --blue: #5AA9E8;
+    --green: #38C6A0;
+    --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --radius: 10px;
+  }
+  [data-theme="light"] {
+    --bg: #F4F1E8; --surface: #FFFFFF; --surface-2: #F1EDE1;
+    --line: #DCD6C6; --line-soft: #E8E3D5; --ink: #20242F;
+    --ink-dim: #5C6276; --ink-faint: #9197A8; --gold: #B47D1E;
+    --gold-soft: rgba(180, 125, 30, 0.14); --blue: #2C74B3; --green: #1B9C77;
+  }
+  @media (prefers-color-scheme: light) {
+    [data-theme="system"] {
+      --bg: #F4F1E8; --surface: #FFFFFF; --surface-2: #F1EDE1;
+      --line: #DCD6C6; --line-soft: #E8E3D5; --ink: #20242F;
+      --ink-dim: #5C6276; --ink-faint: #9197A8; --gold: #B47D1E;
+      --gold-soft: rgba(180, 125, 30, 0.14); --blue: #2C74B3; --green: #1B9C77;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, var(--gold-soft), transparent 60%),
+      var(--bg);
+    color: var(--ink); font-family: var(--body); font-size: 15px;
+    line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh;
+    transition: background .2s, color .2s;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 22px 56px; }
+
+  .masthead {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .mark {
+    font-family: var(--display); font-weight: 700; letter-spacing: -0.02em;
+    font-size: 27px; line-height: 1; color: var(--ink);
+  }
+  .mark .dot { color: var(--gold); }
+  .tagline {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim); letter-spacing: 0.02em;
+  }
+  .tagline b { color: var(--ink); font-weight: 500; }
+  .theme-toggle {
+    margin-left: auto; align-self: center; display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    appearance: none; cursor: pointer; background: transparent; border: none;
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px;
+    padding: 5px 10px; border-radius: 6px; transition: background .15s, color .15s;
+  }
+  .theme-toggle button:hover { color: var(--ink); }
+  .theme-toggle button.active { background: var(--gold); color: #2a1f06; font-weight: 600; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); margin-bottom: 18px;
+  }
+  .panel-h {
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+    color: var(--ink); letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-h .sub { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); font-weight: 400; }
+  .panel-b { padding: 16px; }
+  .lead { color: var(--ink-dim); margin: 0 0 14px; }
+  .lead b { color: var(--ink); font-weight: 500; }
+
+  /* layout */
+  .grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  /* stage */
+  #stage { width: 100%; display: block; border-radius: 8px; background:
+    radial-gradient(700px 380px at 30% 0%, rgba(90,169,232,.06), transparent 60%); }
+
+  /* controls */
+  .ctrl { margin-bottom: 16px; }
+  .ctrl:last-child { margin-bottom: 0; }
+  .ctrl-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .ctrl label { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); letter-spacing: .02em; }
+  .ctrl .val { font-family: var(--mono); font-size: 13px; color: var(--gold); font-weight: 600; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: var(--line); border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); cursor: pointer; border: 2px solid var(--surface);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--gold);
+    cursor: pointer; border: 2px solid var(--surface);
+  }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  button.act {
+    appearance: none; cursor: pointer; font-family: var(--mono); font-size: 12px;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+    padding: 8px 14px; border-radius: 8px; transition: border-color .15s, background .15s;
+  }
+  button.act:hover { border-color: var(--gold); }
+  button.act.primary { background: var(--gold); color: #2a1f06; font-weight: 600; border-color: var(--gold); }
+
+  /* formula / dims */
+  .formula {
+    font-family: var(--mono); font-size: 13px; background: var(--surface-2);
+    border: 1px solid var(--line-soft); border-radius: 8px; padding: 12px 14px;
+    color: var(--ink); margin-bottom: 14px; line-height: 1.7;
+  }
+  .formula .hl { color: var(--gold); font-weight: 600; }
+  .formula .dim { color: var(--ink-dim); }
+
+  .dimgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .dimcard {
+    background: var(--surface-2); border: 1px solid var(--line-soft);
+    border-radius: 8px; padding: 10px 12px; text-align: center;
+  }
+  .dimcard .k { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: .08em; }
+  .dimcard .v { font-family: var(--display); font-size: 22px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+  .dimcard .v.out { color: var(--gold); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-top: 12px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  .stepinfo { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); margin-top: 10px; }
+  .stepinfo b { color: var(--ink); font-weight: 600; }
+
+  .rf-track { display: flex; gap: 8px; margin-top: 10px; }
+  .rf-cell {
+    flex: 1; background: var(--surface-2); border: 1px solid var(--line-soft);
+    border-radius: 8px; padding: 9px 8px; text-align: center;
+  }
+  .rf-cell .lname { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); }
+  .rf-cell .rfv { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--blue); margin-top: 2px; }
+  .rf-cell .rfv small { font-size: 11px; color: var(--ink-dim); font-weight: 400; }
+
+  p.note { color: var(--ink-dim); font-size: 13px; }
+  p.note code { font-family: var(--mono); color: var(--ink); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .err { color: var(--sell, #E8675A); font-family: var(--mono); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="mark">Nikunj<span class="dot">Goyal</span></div>
+    <div class="tagline">Conv3D Explorer · a <b>3D kernel</b> sliding over a voxel volume, receptive fields &amp; output dims live</div>
+    <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+      <button data-theme-val="system">System</button>
+      <button data-theme-val="light">Light</button>
+      <button data-theme-val="dark">Dark</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-b">
+      <p class="lead"><b>3D convolutions</b> slide a small cubic kernel through a volume
+      (D×H×W — think video frames, MRI scans, or voxel grids). At each position the kernel
+      multiplies-and-sums the voxels it covers into one output voxel. Tweak the controls and
+      watch the kernel sweep, the output volume resize, and the receptive field grow layer by layer.</p>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- LEFT: animation stage -->
+    <section class="panel">
+      <div class="panel-h">Volume &amp; sliding kernel <span class="sub" id="pos-label">pos —</span></div>
+      <div class="panel-b">
+        <canvas id="stage" width="560" height="420"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--blue)"></i>input voxels</span>
+          <span><i style="background:var(--gold)"></i>kernel (current window)</span>
+          <span><i style="background:var(--green)"></i>covered receptive field</span>
+        </div>
+        <div class="stepinfo" id="stepinfo">Step <b>0</b> / 0 — press Play.</div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="act primary" id="play">▶ Play</button>
+          <button class="act" id="step">Step ▸</button>
+          <button class="act" id="reset">⟲ Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: controls + dims -->
+    <section class="panel">
+      <div class="panel-h">Hyperparameters</div>
+      <div class="panel-b">
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Input size W (= H = D)</label><span class="val" id="vW">8</span></div>
+          <input type="range" id="rW" min="3" max="14" value="8" />
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Kernel size K</label><span class="val" id="vK">3</span></div>
+          <input type="range" id="rK" min="1" max="7" value="3" />
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Stride S</label><span class="val" id="vS">1</span></div>
+          <input type="range" id="rS" min="1" max="4" value="1" />
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Padding P</label><span class="val" id="vP">0</span></div>
+          <input type="range" id="rP" min="0" max="4" value="0" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-h">Output volume <span class="sub">the size-arithmetic that governs every conv layer</span></div>
+    <div class="panel-b">
+      <div class="formula" id="formula"></div>
+      <div class="dimgrid">
+        <div class="dimcard"><div class="k">input W³</div><div class="v" id="d-in">8³</div></div>
+        <div class="dimcard"><div class="k">kernel K³</div><div class="v" id="d-k">3³</div></div>
+        <div class="dimcard"><div class="k">output O³</div><div class="v out" id="d-out">6³</div></div>
+      </div>
+      <p class="note" id="dim-note"></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h">Receptive field across a stack of conv layers <span class="sub">same K &amp; S, repeated</span></div>
+    <div class="panel-b">
+      <p class="note">Stacking conv layers makes each deep neuron "see" an ever-larger
+      patch of the original input. For layer ℓ the receptive field grows by
+      <code>RF<sub>ℓ</sub> = RF<sub>ℓ-1</sub> + (K − 1)·∏ strides</code>. With small kernels
+      this is why deep 3D CNNs can integrate context across many frames/slices.</p>
+      <div class="rf-track" id="rf-track"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ---------------- theme ---------------- */
+function applyTheme(val){
+  document.documentElement.setAttribute("data-theme", val);
+  document.querySelectorAll("#theme-toggle button").forEach(b =>
+    b.classList.toggle("active", b.dataset.themeVal === val));
+  try { localStorage.setItem("conv3d-theme", val); } catch(e){}
+  draw(); // re-read CSS vars
+}
+$("theme-toggle").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) applyTheme(b.dataset.themeVal);
+});
+
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ---------------- state ---------------- */
+const state = { W:8, K:3, S:1, P:0, step:0, playing:false, positions:[] };
+
+function outDim(W,K,S,P){ return Math.floor((W - K + 2*P)/S) + 1; }
+
+function recompute(){
+  const {W,K,S,P} = state;
+  const O = outDim(W,K,S,P);
+  // positions: top-left corner (in padded coords) of each kernel window,
+  // for a 2D face (we animate the front face; depth handled conceptually).
+  const starts = [];
+  for (let i=0;i<O;i++) starts.push(i*S - P); // coord in unpadded input space
+  state.positions = [];
+  for (let oy=0; oy<O; oy++)
+    for (let ox=0; ox<O; ox++)
+      state.positions.push({ox, oy, x: starts[ox], y: starts[oy]});
+  if (state.step >= state.positions.length) state.step = 0;
+  updateReadouts(O);
+  draw();
+}
+
+function updateReadouts(O){
+  const {W,K,S,P} = state;
+  $("vW").textContent = W; $("vK").textContent = K;
+  $("vS").textContent = S; $("vP").textContent = P;
+  const valid = O >= 1;
+  $("formula").innerHTML =
+    `O = ⌊(<span class="hl">W</span> − <span class="hl">K</span> + 2<span class="hl">P</span>) / <span class="hl">S</span>⌋ + 1` +
+    ` &nbsp;=&nbsp; ⌊(<span class="dim">${W} − ${K} + 2·${P}</span>) / <span class="dim">${S}</span>⌋ + 1` +
+    ` &nbsp;=&nbsp; <span class="hl">${valid ? O : "—"}</span>`;
+  $("d-in").textContent = `${W}³ = ${W*W*W}`;
+  $("d-k").textContent  = `${K}³ = ${K*K*K}`;
+  $("d-out").textContent = valid ? `${O}³ = ${O*O*O}` : "invalid";
+  const note = $("dim-note");
+  if (!valid){
+    note.innerHTML = `<span class="err">Kernel is larger than the padded input — no valid output. Reduce K or add padding.</span>`;
+  } else {
+    const same = (K%2===1 && P===((K-1)/2) && S===1);
+    note.innerHTML = `A ${W}³ volume → ${O}³ output volume per filter, each output voxel formed from ` +
+      `${K*K*K} multiply-adds over the input (× input channels). ` +
+      (same ? `This is a <b style="color:var(--gold)">"same" convolution</b>: padding preserves spatial size.` :
+       (P===0 ? `With P=0 this is a <b>"valid"</b> convolution — the volume shrinks each layer.` :
+        `Padding P=${P} partially offsets the K−1 shrinkage.`));
+  }
+  $("stepinfo").innerHTML = valid
+    ? `Step <b>${state.step+1}</b> / ${state.positions.length} — kernel window across the front face.`
+    : `Step <b>0</b> / 0 — invalid configuration.`;
+  buildRF();
+}
+
+/* ---------------- receptive field stack ---------------- */
+function buildRF(){
+  const {K,S} = state;
+  const track = $("rf-track");
+  track.innerHTML = "";
+  let rf = 1, jump = 1;
+  for (let layer=0; layer<5; layer++){
+    if (layer===0){ rf = 1; jump = 1; }
+    else { rf = rf + (K-1)*jump; jump = jump*S; }
+    const cell = document.createElement("div");
+    cell.className = "rf-cell";
+    cell.innerHTML = `<div class="lname">${layer===0?"input":"conv "+layer}</div>` +
+      `<div class="rfv">${rf}<small>³</small></div>`;
+    track.appendChild(cell);
+  }
+}
+
+/* ---------------- isometric voxel rendering ---------------- */
+const cv = $("stage"), ctx = cv.getContext("2d");
+
+// isometric projection of grid coords (gx,gy,gz) -> screen (px,py)
+function iso(gx, gy, gz, s, ox, oy){
+  const px = ox + (gx - gy) * s * 0.87;
+  const py = oy + (gx + gy) * s * 0.5 - gz * s;
+  return [px, py];
+}
+
+function drawCube(gx, gy, gz, s, ox, oy, fill, alpha, edge){
+  // a unit cube spanning [gx..gx+1] etc. Draw 3 visible faces.
+  const p000 = iso(gx,   gy,   gz,   s, ox, oy);
+  const p100 = iso(gx+1, gy,   gz,   s, ox, oy);
+  const p010 = iso(gx,   gy+1, gz,   s, ox, oy);
+  const p110 = iso(gx+1, gy+1, gz,   s, ox, oy);
+  const p001 = iso(gx,   gy,   gz+1, s, ox, oy);
+  const p101 = iso(gx+1, gy,   gz+1, s, ox, oy);
+  const p011 = iso(gx,   gy+1, gz+1, s, ox, oy);
+  const p111 = iso(gx+1, gy+1, gz+1, s, ox, oy);
+  ctx.globalAlpha = alpha;
+  // shade faces slightly differently for depth cue
+  const faces = [
+    {pts:[p001,p101,p111,p011], shade:1.0},   // top
+    {pts:[p100,p110,p111,p101], shade:0.78},  // right
+    {pts:[p010,p110,p111,p011], shade:0.6},   // front
+  ];
+  for (const f of faces){
+    ctx.beginPath();
+    ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+    for (let i=1;i<f.pts.length;i++) ctx.lineTo(f.pts[i][0], f.pts[i][1]);
+    ctx.closePath();
+    ctx.fillStyle = shadeColor(fill, f.shade);
+    ctx.fill();
+    if (edge){ ctx.strokeStyle = edge; ctx.lineWidth = 1; ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function shadeColor(hex, f){
+  // hex like #RRGGBB; multiply by factor f
+  const h = hex.replace('#','');
+  let r = parseInt(h.substring(0,2),16);
+  let g = parseInt(h.substring(2,4),16);
+  let b = parseInt(h.substring(4,6),16);
+  r = Math.min(255, Math.round(r*f));
+  g = Math.min(255, Math.round(g*f));
+  b = Math.min(255, Math.round(b*f));
+  return `rgb(${r},${g},${b})`;
+}
+
+function draw(){
+  const W = state.W;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if (state.positions.length === 0) return;
+
+  const blue  = cssVar('--blue')  || '#5AA9E8';
+  const gold  = cssVar('--gold')  || '#E8B24B';
+  const green = cssVar('--green') || '#38C6A0';
+  const lineC = cssVar('--line')  || '#29314F';
+
+  // scale cube size to fit
+  const s = Math.max(8, Math.min(26, 360 / (W * 1.9)));
+  const ox = cv.width*0.46;
+  const oy = cv.height*0.30 + W*s*0.15;
+
+  const pos = state.positions[state.step] || {x:0,y:0};
+  const K = state.K;
+
+  // covered set: union of all windows up to current step (front face z-slab)
+  const covered = new Set();
+  for (let t=0; t<=state.step; t++){
+    const p = state.positions[t];
+    for (let dy=0; dy<K; dy++) for (let dx=0; dx<K; dx++){
+      const xx = p.x+dx, yy = p.y+dy;
+      if (xx>=0 && xx<W && yy>=0 && yy<W) covered.add(yy*W+xx);
+    }
+  }
+
+  // current kernel window cells (front slab depth = K)
+  function inKernel(x,y){ return x>=pos.x && x<pos.x+K && y>=pos.y && y<pos.y+K; }
+
+  // Painter's algorithm: draw back-to-front. Higher (gx+gy+gz) drawn later.
+  // We render only the front depth slab (gz 0..K-1) plus the input shell for clarity.
+  const cells = [];
+  const depth = Math.min(W, Math.max(K, Math.ceil(W*0.55))); // show partial depth
+  for (let gz=0; gz<depth; gz++)
+    for (let gy=0; gy<W; gy++)
+      for (let gx=0; gx<W; gx++)
+        cells.push([gx,gy,gz]);
+  cells.sort((a,b)=> (a[0]+a[1]+a[2]) - (b[0]+b[1]+b[2]));
+
+  for (const [gx,gy,gz] of cells){
+    // only render outer shell + the active region to keep it readable
+    const onShell = (gx===0||gy===0||gz===0||gx===W-1||gy===W-1||gz===depth-1);
+    const isKernelZ = gz < K;
+    const inK = isKernelZ && inKernel(gx,gy);
+    const isCov = gz===0 && covered.has(gy*W+gx);
+    if (!onShell && !inK && !isCov) continue;
+
+    let fill = blue, alpha = 0.16, edge = "rgba(120,140,190,0.35)";
+    if (isCov){ fill = green; alpha = 0.5; }
+    if (inK){ fill = gold; alpha = 0.95; edge = "rgba(60,45,10,0.5)"; }
+    else if (onShell){ alpha = 0.22; }
+    drawCube(gx,gy,gz, s, ox, oy, fill, alpha, edge);
+  }
+
+  $("pos-label").textContent = `pos (x=${pos.x}, y=${pos.y})`;
+}
+
+/* ---------------- animation ---------------- */
+let timer = null;
+function play(){
+  if (state.playing){ stop(); return; }
+  if (state.positions.length===0) return;
+  state.playing = true; $("play").textContent = "⏸ Pause";
+  timer = setInterval(()=>{
+    state.step++;
+    if (state.step >= state.positions.length){ state.step = state.positions.length-1; stop(); }
+    updateReadouts(outDim(state.W,state.K,state.S,state.P));
+    draw();
+  }, 280);
+}
+function stop(){ state.playing=false; $("play").textContent="▶ Play"; if(timer){clearInterval(timer);timer=null;} }
+$("play").addEventListener("click", play);
+$("step").addEventListener("click", ()=>{
+  stop();
+  if (state.positions.length===0) return;
+  state.step = (state.step+1) % state.positions.length;
+  updateReadouts(outDim(state.W,state.K,state.S,state.P)); draw();
+});
+$("reset").addEventListener("click", ()=>{ stop(); state.step=0; recompute(); });
+
+/* ---------------- bind sliders ---------------- */
+function bind(id, key){
+  $(id).addEventListener("input", e=>{
+    state[key] = parseInt(e.target.value,10);
+    stop(); state.step = 0; recompute();
+  });
+}
+bind("rW","W"); bind("rK","K"); bind("rS","S"); bind("rP","P");
+
+/* ---------------- init ---------------- */
+let saved = "dark";
+try { saved = localStorage.getItem("conv3d-theme") || "dark"; } catch(e){}
+applyTheme(saved);
+recompute();
+</script>
+</body>
+</html>

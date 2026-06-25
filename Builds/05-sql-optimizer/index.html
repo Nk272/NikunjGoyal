@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Query Planner — SQL Optimizer & Plan Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0E1220;
+    --surface: #161B2E;
+    --surface-2: #1E2540;
+    --line: #29314F;
+    --line-soft: #20273f;
+    --ink: #ECE7DA;
+    --ink-dim: #8C93AD;
+    --ink-faint: #5A6080;
+    --gold: #E8B24B;
+    --gold-soft: rgba(232, 178, 75, 0.14);
+    --buy: #38C6A0;
+    --sell: #E8675A;
+    --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --radius: 10px;
+  }
+  [data-theme="light"] {
+    --bg: #F4F1E8; --surface: #FFFFFF; --surface-2: #F1EDE1;
+    --line: #DCD6C6; --line-soft: #E8E3D5; --ink: #20242F;
+    --ink-dim: #5C6276; --ink-faint: #9197A8; --gold: #B47D1E;
+    --gold-soft: rgba(180, 125, 30, 0.14); --buy: #1B9C77; --sell: #CC4636;
+  }
+  @media (prefers-color-scheme: light) {
+    [data-theme="system"] {
+      --bg: #F4F1E8; --surface: #FFFFFF; --surface-2: #F1EDE1;
+      --line: #DCD6C6; --line-soft: #E8E3D5; --ink: #20242F;
+      --ink-dim: #5C6276; --ink-faint: #9197A8; --gold: #B47D1E;
+      --gold-soft: rgba(180, 125, 30, 0.14); --buy: #1B9C77; --sell: #CC4636;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, var(--gold-soft), transparent 60%), var(--bg);
+    color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background .2s, color .2s;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 22px 56px; }
+
+  /* masthead */
+  .masthead {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .mark { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; font-size: 27px; line-height: 1; color: var(--ink); }
+  .mark .accent { color: var(--gold); }
+  .tagline { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); letter-spacing: 0.02em; }
+  .tagline b { color: var(--ink); font-weight: 500; }
+
+  /* theme toggle */
+  .theme-toggle {
+    margin-left: auto; align-self: center; display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    appearance: none; cursor: pointer; background: transparent; border: none;
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px;
+    padding: 5px 10px; border-radius: 6px; transition: background .15s, color .15s;
+  }
+  .theme-toggle button:hover { color: var(--ink); }
+  .theme-toggle button.active { background: var(--gold); color: #2a1f06; font-weight: 600; }
+
+  /* panels */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 18px; }
+  .panel-h {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint);
+    padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .panel-h .hint { color: var(--ink-dim); letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
+  .panel-b { padding: 16px; }
+
+  /* schema cards */
+  .schema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tbl-card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .tbl-card .tname { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--ink); }
+  .tbl-card .rows { font-family: var(--mono); font-size: 11px; color: var(--gold); margin-left: 8px; }
+  .tbl-card .cols { font-family: var(--mono); font-size: 11.5px; color: var(--ink-dim); margin-top: 7px; line-height: 1.7; }
+  .tbl-card .cols .idx { color: var(--buy); }
+  .tag { display:inline-block; font-family: var(--mono); font-size: 9.5px; letter-spacing:0.06em; text-transform:uppercase;
+    border:1px solid var(--buy); color: var(--buy); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+
+  /* editor */
+  textarea {
+    width: 100%; min-height: 92px; resize: vertical; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.65; padding: 12px 14px;
+    outline: none; transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--gold); }
+  .editor-foot { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-right: auto; }
+
+  /* buttons */
+  .btn {
+    appearance: none; cursor: pointer; background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--ink); font-family: var(--body); font-size: 13.5px; font-weight: 500;
+    padding: 9px 16px; border-radius: 8px; transition: border-color .15s, background .15s;
+  }
+  .btn:hover { border-color: var(--gold); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .btn.primary { background: var(--gold); color: #2a1f06; border-color: var(--gold); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; border-color: var(--line); }
+  .btn-sm { padding: 5px 11px; font-size: 11.5px; font-family: var(--mono); }
+  .chip {
+    appearance:none; cursor:pointer; background: var(--bg); border:1px solid var(--line);
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px; padding: 5px 9px; border-radius: 6px;
+  }
+  .chip:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  .err { color: var(--sell); font-family: var(--mono); font-size: 12.5px; margin-top: 10px; display:none; white-space: pre-wrap; }
+
+  /* svg diagrams */
+  svg.diag { display: block; width: 100%; height: auto; }
+  .node-rect { rx: 7; }
+  text { font-family: var(--mono); }
+
+  /* plan columns */
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .plan-col { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .plan-col .ph {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 11px 14px; border-bottom: 1px solid var(--line-soft); display:flex; justify-content:space-between; align-items:center;
+  }
+  .plan-col.naive .ph { color: var(--sell); }
+  .plan-col.opt .ph { color: var(--buy); }
+  .plan-col .cost-badge { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 5px; }
+  .plan-col.naive .cost-badge { color: var(--sell); border:1px solid var(--sell); }
+  .plan-col.opt .cost-badge { color: var(--buy); border:1px solid var(--buy); }
+
+  /* steps panel */
+  .steps-bar { display:flex; align-items:center; gap: 12px; flex-wrap: wrap; }
+  .step-readout { font-family: var(--mono); font-size: 12.5px; color: var(--ink); flex: 1; min-width: 200px; }
+  .step-readout .k { color: var(--gold); }
+  .step-count { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .rule-list { list-style: none; margin: 14px 0 0; padding: 0; display:flex; flex-direction:column; gap: 8px; }
+  .rule-list li {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+    border: 1px solid var(--line-soft); border-radius: 7px; padding: 9px 12px; transition: all .2s;
+    display:flex; gap: 10px; align-items: baseline;
+  }
+  .rule-list li .n { color: var(--ink-faint); }
+  .rule-list li.done { color: var(--ink); border-color: var(--line); }
+  .rule-list li.done .n { color: var(--buy); }
+  .rule-list li.active { color: var(--ink); border-color: var(--gold); background: var(--gold-soft); }
+  .rule-list li.active .n { color: var(--gold); }
+
+  .summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 4px; }
+  .metric { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .metric .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 5px; }
+  .metric .v { font-family: var(--display); font-weight: 700; font-size: 23px; letter-spacing: -0.02em; line-height: 1; }
+  .metric.win { border-color: rgba(56,198,160,0.4); background: linear-gradient(180deg, rgba(56,198,160,0.1), var(--surface)); }
+  .metric.win .v { color: var(--buy); }
+
+  @media (max-width: 720px) {
+    .plans, .schema-grid, .summary { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark">Nikunj<span class="accent">Goyal</span></div>
+    <div class="tagline">SQL <b>Query Optimizer</b> · logical tree → physical plans, with visible rewrite rules</div>
+    <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+      <button data-theme-val="system">System</button>
+      <button data-theme-val="light">Light</button>
+      <button data-theme-val="dark">Dark</button>
+    </div>
+  </header>
+
+  <!-- SCHEMA -->
+  <section class="panel">
+    <div class="panel-h">Demo Schema <span class="hint">fixed tables · row counts &amp; indexes used by the cost model</span></div>
+    <div class="panel-b">
+      <div class="schema-grid" id="schema"></div>
+    </div>
+  </section>
+
+  <!-- QUERY EDITOR -->
+  <section class="panel">
+    <div class="panel-h">Query <span class="hint">SELECT … FROM … [JOIN … ON …] [WHERE …] [GROUP BY] [ORDER BY] [LIMIT]</span></div>
+    <div class="panel-b">
+      <textarea id="sql" spellcheck="false"></textarea>
+      <div class="editor-foot">
+        <div class="examples" id="examples"></div>
+        <button class="btn primary" id="run">Plan Query</button>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+  </section>
+
+  <!-- LOGICAL TREE -->
+  <section class="panel">
+    <div class="panel-h">Logical Query Tree <span class="hint">parsed relational algebra, as written</span></div>
+    <div class="panel-b"><svg class="diag" id="logical"></svg></div>
+  </section>
+
+  <!-- PHYSICAL PLANS -->
+  <section class="panel">
+    <div class="panel-h">Physical Plans <span class="hint">naive vs optimized · cost &amp; est. rows per operator</span></div>
+    <div class="panel-b">
+      <div class="plans">
+        <div class="plan-col naive">
+          <div class="ph"><span>Naive Plan</span><span class="cost-badge" id="naive-cost">—</span></div>
+          <svg class="diag" id="naive"></svg>
+        </div>
+        <div class="plan-col opt">
+          <div class="ph"><span>Optimized Plan</span><span class="cost-badge" id="opt-cost">—</span></div>
+          <svg class="diag" id="opt"></svg>
+        </div>
+      </div>
+      <div class="summary" id="summary"></div>
+    </div>
+  </section>
+
+  <!-- REWRITE STEPS -->
+  <section class="panel">
+    <div class="panel-h">Optimizer Rewrites <span class="hint">step through the transformations</span></div>
+    <div class="panel-b">
+      <div class="steps-bar">
+        <button class="btn btn-sm" id="reset" disabled>Reset</button>
+        <button class="btn primary btn-sm" id="step" disabled>Step ▸</button>
+        <div class="step-readout" id="readout">Plan a query, then step through the rewrites.</div>
+        <div class="step-count" id="stepcount"></div>
+      </div>
+      <ul class="rule-list" id="rules"></ul>
+    </div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   1. DEMO CATALOG  (fixed tables, row counts, indexes)
+   ============================================================ */
+const CATALOG = {
+  users: {
+    name: "users", rows: 100000,
+    cols: ["id", "name", "country", "signup_date", "age"],
+    indexes: { id: true, country: true } // indexed columns
+  },
+  orders: {
+    name: "orders", rows: 2000000,
+    cols: ["id", "user_id", "amount", "status", "created_at"],
+    indexes: { id: true, user_id: true, status: true }
+  }
+};
+
+// per-column selectivity estimate for equality predicates (fraction of rows kept)
+const SELECTIVITY = {
+  "users.country": 0.04,   // ~25 countries
+  "users.age": 0.02,
+  "users.id": 1 / 100000,
+  "orders.status": 0.25,   // ~4 statuses
+  "orders.user_id": 1 / 100000,
+  "orders.amount": 0.30,   // range-ish
+  "orders.id": 1 / 2000000
+};
+function predSelectivity(table, col, op) {
+  const key = table + "." + col;
+  let s = SELECTIVITY[key] != null ? SELECTIVITY[key] : 0.33;
+  if (op !== "=") s = Math.min(0.5, s * 8 + 0.1); // ranges are less selective
+  return s;
+}
+
+/* ============================================================
+   2. TOKENIZER + PARSER  (supports the documented subset)
+   ============================================================ */
+function tokenize(sql) {
+  const re = /\s*(>=|<=|<>|!=|=|<|>|\(|\)|,|\*|;|[A-Za-z_][A-Za-z0-9_\.]*|'[^']*'|\d+\.?\d*)/g;
+  const toks = []; let m;
+  let i = 0;
+  while ((m = re.exec(sql)) !== null) {
+    if (m.index !== i && sql.slice(i, m.index).trim() !== "") {
+      throw new Error("Unexpected character near: " + sql.slice(i, m.index));
+    }
+    if (m[1] !== ";" && m[1] !== "") toks.push(m[1]);
+    i = re.lastIndex;
+  }
+  return toks;
+}
+
+function parse(sql) {
+  const toks = tokenize(sql);
+  let p = 0;
+  const peek = () => toks[p];
+  const up = () => (toks[p] || "").toUpperCase();
+  const next = () => toks[p++];
+  const eat = (kw) => {
+    if (up() !== kw) throw new Error("Expected '" + kw + "' but found '" + (peek() || "<end>") + "'");
+    return next();
+  };
+  const isKw = w => ["FROM","JOIN","ON","WHERE","GROUP","ORDER","BY","LIMIT","AND","INNER","LEFT"].includes(w);
+
+  // SELECT
+  eat("SELECT");
+  const cols = [];
+  if (up() === "*") { next(); cols.push("*"); }
+  else {
+    do { cols.push(next()); } while (up() === "," && next());
+  }
+
+  // FROM
+  eat("FROM");
+  const from = next();
+  if (!CATALOG[from]) throw new Error("Unknown table '" + from + "'. Try: users, orders.");
+
+  // JOIN
+  let join = null;
+  if (up() === "INNER" || up() === "LEFT") next();
+  if (up() === "JOIN") {
+    next();
+    const jtbl = next();
+    if (!CATALOG[jtbl]) throw new Error("Unknown table '" + jtbl + "'.");
+    eat("ON");
+    const l = next(); const op = next(); const r = next();
+    if (op !== "=") throw new Error("JOIN ON only supports equi-joins (=).");
+    join = { table: jtbl, left: l, right: r };
+  }
+
+  // WHERE (AND-chained simple predicates)
+  const where = [];
+  if (up() === "WHERE") {
+    next();
+    do {
+      const col = next();
+      const op = next();
+      const val = next();
+      if (!["=","<",">","<=",">=","<>","!="].includes(op))
+        throw new Error("Unsupported operator '" + op + "' in WHERE.");
+      where.push({ col, op, val });
+      if (up() === "AND") { next(); continue; }
+      break;
+    } while (true);
+  }
+
+  // GROUP BY
+  let groupBy = null;
+  if (up() === "GROUP") { next(); eat("BY"); groupBy = []; do { groupBy.push(next()); } while (up() === "," && next()); }
+
+  // ORDER BY
+  let orderBy = null;
+  if (up() === "ORDER") { next(); eat("BY"); orderBy = []; do { orderBy.push(next()); } while (up() === "," && next()); }
+
+  // LIMIT
+  let limit = null;
+  if (up() === "LIMIT") { next(); limit = parseInt(next(), 10); }
+
+  if (p < toks.length) throw new Error("Unexpected trailing input: '" + toks.slice(p).join(" ") + "'");
+
+  return { cols, from, join, where, groupBy, orderBy, limit };
+}
+
+/* resolve which table a column belongs to */
+function colTable(ast, col) {
+  if (col.indexOf(".") >= 0) return col.split(".")[0];
+  const tables = [ast.from]; if (ast.join) tables.push(ast.join.table);
+  for (const t of tables) {
+    const bare = CATALOG[t].cols;
+    if (bare.includes(col)) return t;
+  }
+  return ast.from;
+}
+function colName(col) { return col.indexOf(".") >= 0 ? col.split(".")[1] : col; }
+
+/* ============================================================
+   3. PLAN NODE MODEL
+   ============================================================ */
+// node: { op, label, detail, rows, cost, color, children:[] }
+function mkNode(op, label, detail, color) {
+  return { op, label, detail: detail || "", rows: 0, cost: 0, color: color || "ink", children: [] };
+}
+
+/* scan cost: seq scan reads all rows; index scan reads ~ selectivity*rows + log */
+function scanCost(table, sel, useIndex) {
+  const n = CATALOG[table].rows;
+  if (useIndex) return Math.ceil(n * sel) + Math.ceil(Math.log2(n + 1)) * 3;
+  return n; // full sequential scan
+}
+
+/* combine WHERE predicates for one table into combined selectivity */
+function tableSelectivity(ast, table) {
+  let sel = 1;
+  for (const w of ast.where) {
+    if (colTable(ast, w.col) === table) sel *= predSelectivity(table, colName(w.col), w.op);
+  }
+  return sel;
+}
+function tablePreds(ast, table) {
+  return ast.where.filter(w => colTable(ast, w.col) === table);
+}
+function predStr(w) { return colName(w.col) + " " + w.op + " " + w.val; }
+
+/* total cost = sum over node costs */
+function totalCost(node) {
+  let c = node.cost;
+  for (const ch of node.children) c += totalCost(ch);
+  return c;
+}
+
+/* ============================================================
+   4. BUILD NAIVE PLAN
+   - seq scan every table
+   - cartesian/join above, filter ALL where on top, then project/group/sort/limit
+   ============================================================ */
+function buildScan(table, useIndex, indexCol, sel, projected) {
+  const n = CATALOG[table].rows;
+  let node;
+  if (useIndex) {
+    node = mkNode("IndexScan", "Index Scan", table + " · idx(" + indexCol + ")", "buy");
+    node.rows = Math.max(1, Math.ceil(n * sel));
+    node.cost = scanCost(table, sel, true);
+  } else {
+    node = mkNode("SeqScan", "Seq Scan", "on " + table, "sell");
+    node.rows = projected != null ? n : n; // scan reads all rows regardless
+    node.cost = scanCost(table, 1, false);
+  }
+  return node;
+}
+
+function buildNaive(ast) {
+  // 1. seq scans of base tables (no index, full scan)
+  const baseTables = [ast.from]; if (ast.join) baseTables.push(ast.join.table);
+  const scans = baseTables.map(t => {
+    const node = mkNode("SeqScan", "Seq Scan", "on " + t, "sell");
+    node.rows = CATALOG[t].rows;
+    node.cost = scanCost(t, 1, false);
+    return node;
+  });
+
+  // 2. join (or single)
+  let root = scans[0];
+  if (ast.join) {
+    const j = mkNode("NestLoopJoin", "Nested Loop Join",
+      colName(ast.join.left) + " = " + colName(ast.join.right), "ink");
+    j.children = [scans[0], scans[1]];
+    // naive nested loop: outer rows * inner rows probed, join produces ~ outer (fk join)
+    const outer = scans[0].rows, inner = scans[1].rows;
+    j.cost = outer * 4 + outer * Math.ceil(Math.log2(inner + 1)); // crude NL cost
+    j.rows = Math.max(outer, inner); // fk fan-out ~ larger side
+    j.detail += "  (probes " + outer.toLocaleString() + "×)";
+    root = j;
+  }
+
+  // 3. filter ALL where predicates on top
+  if (ast.where.length) {
+    const f = mkNode("Filter", "Filter", ast.where.map(predStr).join(" AND "), "gold");
+    f.children = [root];
+    let sel = 1;
+    for (const w of ast.where) sel *= predSelectivity(colTable(ast, w.col), colName(w.col), w.op);
+    f.rows = Math.max(1, Math.ceil(root.rows * sel));
+    f.cost = root.rows; // touches every input row
+    root = f;
+  }
+
+  root = addTopOps(ast, root);
+  return root;
+}
+
+/* ============================================================
+   5. BUILD OPTIMIZED PLAN
+   - predicate pushdown (filter to each scan)
+   - index vs seq scan selection per table
+   - join reorder: smaller estimated relation as outer (drives loop)
+   - projection pushdown (only needed columns)
+   ============================================================ */
+function neededCols(ast, table) {
+  const set = new Set();
+  const add = c => { if (c === "*") { CATALOG[table].cols.forEach(x => set.add(x)); return; }
+    if (colTable(ast, c) === table) set.add(colName(c)); };
+  ast.cols.forEach(add);
+  ast.where.forEach(w => add(w.col));
+  if (ast.groupBy) ast.groupBy.forEach(add);
+  if (ast.orderBy) ast.orderBy.forEach(add);
+  if (ast.join) { add(ast.join.left); add(ast.join.right); }
+  return [...set];
+}
+
+function buildOptimized(ast) {
+  const baseTables = [ast.from]; if (ast.join) baseTables.push(ast.join.table);
+
+  // build a pushed-down, possibly-indexed scan per table
+  const built = baseTables.map(t => {
+    const preds = tablePreds(ast, t);
+    const sel = tableSelectivity(ast, t);
+    // choose index: if a predicate targets an indexed column with eq, use index scan
+    let idxCol = null;
+    for (const w of preds) {
+      const cn = colName(w.col);
+      if (CATALOG[t].indexes[cn] && w.op === "=") { idxCol = cn; break; }
+    }
+    const n = CATALOG[t].rows;
+    let scan;
+    if (idxCol) {
+      scan = mkNode("IndexScan", "Index Scan", t + " · idx(" + idxCol + ")", "buy");
+      scan.cost = scanCost(t, sel, true);
+    } else {
+      scan = mkNode("SeqScan", "Seq Scan", "on " + t, "ink");
+      scan.cost = scanCost(t, 1, false);
+    }
+    scan.rows = Math.max(1, Math.ceil(n * sel));
+    let node = scan;
+    // pushed-down filter (remaining preds beyond the index lookup)
+    const remaining = preds.filter(w => !(idxCol && colName(w.col) === idxCol && w.op === "="));
+    if (remaining.length) {
+      const f = mkNode("Filter", "Filter ↓", remaining.map(predStr).join(" AND "), "gold");
+      f.children = [scan];
+      f.cost = scan.rows;
+      f.rows = scan.rows; // selectivity already folded into scan estimate
+      node = f;
+    }
+    // projection pushdown
+    const need = neededCols(ast, t);
+    if (need.length && need.length < CATALOG[t].cols.length) {
+      const pr = mkNode("Project", "Project ↓", need.join(", "), "ink-dim");
+      pr.children = [node]; pr.cost = Math.ceil(node.rows * 0.05); pr.rows = node.rows;
+      node = pr;
+    }
+    return { table: t, node, estRows: scan.rows };
+  });
+
+  let root;
+  if (ast.join) {
+    // join reorder: smaller estimated relation drives as OUTER
+    const sorted = built.slice().sort((a, b) => a.estRows - b.estRows);
+    const outer = sorted[0], inner = sorted[1];
+    // hash join when inner side is large; else index nested loop if join col indexed
+    const innerJoinCol = colName(ast.join.left.split(".")[0] === inner.table ? ast.join.left : ast.join.right);
+    const innerIndexed = CATALOG[inner.table].indexes[innerJoinCol];
+    let j;
+    if (innerIndexed) {
+      j = mkNode("IndexNestLoop", "Index Nested Loop", colName(ast.join.left) + " = " + colName(ast.join.right), "buy");
+      j.cost = outer.estRows * (Math.ceil(Math.log2(CATALOG[inner.table].rows + 1)) * 2 + 2);
+    } else {
+      j = mkNode("HashJoin", "Hash Join", colName(ast.join.left) + " = " + colName(ast.join.right), "buy");
+      j.cost = outer.estRows + inner.estRows;
+    }
+    j.children = [outer.node, inner.node];
+    j.rows = Math.max(outer.estRows, inner.estRows);
+    j.detail += "  (outer: " + outer.table + ")";
+    root = j;
+  } else {
+    root = built[0].node;
+  }
+
+  root = addTopOps(ast, root);
+  return root;
+}
+
+/* shared: GROUP BY / ORDER BY / LIMIT / final projection */
+function addTopOps(ast, root) {
+  if (ast.groupBy) {
+    const g = mkNode("Aggregate", "Hash Aggregate", "group by " + ast.groupBy.map(colName).join(", "), "ink");
+    g.children = [root]; g.cost = root.rows;
+    g.rows = Math.max(1, Math.ceil(root.rows * 0.1));
+    root = g;
+  }
+  // final projection (top) if select list isn't *
+  if (!(ast.cols.length === 1 && ast.cols[0] === "*")) {
+    const pr = mkNode("Project", "Project", ast.cols.map(colName).join(", "), "ink-dim");
+    pr.children = [root]; pr.cost = Math.ceil(root.rows * 0.02); pr.rows = root.rows;
+    root = pr;
+  }
+  if (ast.orderBy) {
+    const s = mkNode("Sort", "Sort", "by " + ast.orderBy.map(colName).join(", "), "ink");
+    s.children = [root];
+    s.cost = Math.ceil(root.rows * Math.log2(root.rows + 2));
+    s.rows = root.rows;
+    root = s;
+  }
+  if (ast.limit != null) {
+    const l = mkNode("Limit", "Limit", String(ast.limit), "gold");
+    l.children = [root]; l.cost = ast.limit; l.rows = Math.min(root.rows, ast.limit);
+    root = l;
+  }
+  return root;
+}
+
+/* ============================================================
+   6. SVG TREE LAYOUT + RENDER
+   ============================================================ */
+const NW = 168, NH = 50, HGAP = 24, VGAP = 38;
+function layout(node, depth, xref) {
+  node._children = node.children || [];
+  if (node._children.length === 0) {
+    node._x = xref.x; xref.x += NW + HGAP;
+  } else {
+    node._children.forEach(c => layout(c, depth + 1, xref));
+    const xs = node._children.map(c => c._x);
+    node._x = (Math.min(...xs) + Math.max(...xs)) / 2;
+  }
+  node._y = depth * (NH + VGAP);
+  node._depth = depth;
+  return node;
+}
+function maxDepth(node) {
+  if (!node.children.length) return node._depth;
+  return Math.max(...node.children.map(maxDepth));
+}
+function collect(node, arr) { arr.push(node); node.children.forEach(c => collect(c, arr)); return arr; }
+
+const COLORVAR = { ink: "var(--ink)", "ink-dim": "var(--ink-dim)", gold: "var(--gold)", buy: "var(--buy)", sell: "var(--sell)" };
+
+function renderTree(svg, root, opts) {
+  opts = opts || {};
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  if (!root) return;
+  const xref = { x: 0 };
+  layout(root, 0, xref);
+  const nodes = collect(root, []);
+  const depth = maxDepth(root);
+  const minX = Math.min(...nodes.map(n => n._x));
+  const maxX = Math.max(...nodes.map(n => n._x + NW));
+  const W = maxX - minX + 24;
+  const H = (depth + 1) * (NH + VGAP) + 30;
+  const PAD = 12;
+  svg.setAttribute("viewBox", "0 0 " + (W + PAD * 2) + " " + (H + PAD));
+  const ns = "http://www.w3.org/2000/svg";
+  const shift = x => x - minX + PAD;
+
+  // edges
+  nodes.forEach(n => {
+    n.children.forEach(c => {
+      const line = document.createElementNS(ns, "path");
+      const x1 = shift(n._x) + NW / 2, y1 = n._y + NH + 14;
+      const x2 = shift(c._x) + NW / 2, y2 = c._y + 14;
+      line.setAttribute("d", "M" + x1 + " " + y1 + " C " + x1 + " " + (y1 + 18) + ", " + x2 + " " + (y2 - 18) + ", " + x2 + " " + y2);
+      line.setAttribute("stroke", "var(--line)");
+      line.setAttribute("stroke-width", "1.5");
+      line.setAttribute("fill", "none");
+      svg.appendChild(line);
+    });
+  });
+
+  // nodes
+  nodes.forEach(n => {
+    const g = document.createElementNS(ns, "g");
+    const x = shift(n._x), y = n._y + 14;
+    const col = COLORVAR[n.color] || "var(--ink)";
+    const highlight = opts.highlight && opts.highlight(n);
+
+    const rect = document.createElementNS(ns, "rect");
+    rect.setAttribute("x", x); rect.setAttribute("y", y);
+    rect.setAttribute("width", NW); rect.setAttribute("height", NH);
+    rect.setAttribute("rx", "7");
+    rect.setAttribute("fill", "var(--surface-2)");
+    rect.setAttribute("stroke", highlight ? "var(--gold)" : col);
+    rect.setAttribute("stroke-width", highlight ? "2.5" : "1.3");
+    if (highlight) { rect.setAttribute("filter", "drop-shadow(0 0 6px var(--gold))"); }
+    g.appendChild(rect);
+
+    const t1 = document.createElementNS(ns, "text");
+    t1.setAttribute("x", x + 11); t1.setAttribute("y", y + 18);
+    t1.setAttribute("fill", col); t1.setAttribute("font-size", "12.5");
+    t1.setAttribute("font-weight", "600");
+    t1.textContent = n.label;
+    g.appendChild(t1);
+
+    if (n.detail) {
+      const t2 = document.createElementNS(ns, "text");
+      t2.setAttribute("x", x + 11); t2.setAttribute("y", y + 32);
+      t2.setAttribute("fill", "var(--ink-dim)"); t2.setAttribute("font-size", "9.5");
+      let d = n.detail; if (d.length > 26) d = d.slice(0, 25) + "…";
+      t2.textContent = d;
+      g.appendChild(t2);
+    }
+
+    // cost/rows annotation
+    const t3 = document.createElementNS(ns, "text");
+    t3.setAttribute("x", x + 11); t3.setAttribute("y", y + 44);
+    t3.setAttribute("fill", "var(--ink-faint)"); t3.setAttribute("font-size", "9");
+    t3.textContent = "rows≈" + fmt(n.rows) + "  cost=" + fmt(n.cost);
+    g.appendChild(t3);
+
+    svg.appendChild(g);
+  });
+}
+
+function fmt(n) {
+  n = Math.round(n);
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
+  return String(n);
+}
+
+/* logical tree (relational algebra, as written) */
+function buildLogical(ast) {
+  let root;
+  const scanFrom = mkNode("Relation", ast.from, CATALOG[ast.from].rows.toLocaleString() + " rows", "ink-dim");
+  scanFrom.rows = CATALOG[ast.from].rows; scanFrom.cost = 0;
+  if (ast.join) {
+    const scanJoin = mkNode("Relation", ast.join.table, CATALOG[ast.join.table].rows.toLocaleString() + " rows", "ink-dim");
+    scanJoin.rows = CATALOG[ast.join.table].rows; scanJoin.cost = 0;
+    const j = mkNode("⋈ Join", "Join", colName(ast.join.left) + " = " + colName(ast.join.right), "ink");
+    j.children = [scanFrom, scanJoin]; j.rows = Math.max(scanFrom.rows, scanJoin.rows);
+    root = j;
+  } else root = scanFrom;
+  if (ast.where.length) {
+    const f = mkNode("σ Select", "σ (where)", ast.where.map(predStr).join(" AND "), "gold");
+    f.children = [root]; f.rows = root.rows; root = f;
+  }
+  if (ast.groupBy) {
+    const g = mkNode("γ Group", "γ (group by)", ast.groupBy.map(colName).join(", "), "ink");
+    g.children = [root]; g.rows = root.rows; root = g;
+  }
+  if (!(ast.cols.length === 1 && ast.cols[0] === "*")) {
+    const pr = mkNode("π Project", "π (project)", ast.cols.map(colName).join(", "), "ink-dim");
+    pr.children = [root]; pr.rows = root.rows; root = pr;
+  }
+  if (ast.orderBy) {
+    const s = mkNode("τ Sort", "τ (order by)", ast.orderBy.map(colName).join(", "), "ink");
+    s.children = [root]; s.rows = root.rows; root = s;
+  }
+  if (ast.limit != null) {
+    const l = mkNode("Limit", "Limit", String(ast.limit), "gold");
+    l.children = [root]; l.rows = Math.min(root.rows, ast.limit); root = l;
+  }
+  return root;
+}
+
+/* ============================================================
+   7. REWRITE STEP NARRATIVE
+   ============================================================ */
+function buildRewriteSteps(ast) {
+  const steps = [];
+  steps.push({ title: "Index vs Seq Scan selection",
+    body: "Inspect predicates against catalog indexes. Equality on an indexed column ⇒ Index Scan (reads ≈ selectivity·N rows); otherwise full Sequential Scan (reads all N rows)." });
+  if (ast.where.length) {
+    steps.push({ title: "Predicate pushdown",
+      body: "Move WHERE filters " + ast.where.map(predStr).join(" AND ") + " down to the scans they reference, shrinking each relation before it flows upward." });
+  }
+  if (ast.join) {
+    steps.push({ title: "Join reordering by cardinality",
+      body: "Estimate each side's row count after filters, then drive the join with the SMALLER relation as the outer loop. Use an Index Nested Loop when the join key is indexed, else a Hash Join." });
+  }
+  steps.push({ title: "Projection pushdown",
+    body: "Discard unused columns at the scans so only the columns actually referenced travel up the tree, reducing per-row width." });
+  steps.push({ title: "Top operators",
+    body: "Apply GROUP BY / ORDER BY / LIMIT once on the now much smaller intermediate result." });
+  return steps;
+}
+
+/* ============================================================
+   8. EXAMPLES
+   ============================================================ */
+const EXAMPLES = [
+  { label: "Join + filter",
+    sql: "SELECT users.name, orders.amount\nFROM users\nJOIN orders ON users.id = orders.user_id\nWHERE users.country = 'US' AND orders.status = 'paid'\nORDER BY orders.amount\nLIMIT 10" },
+  { label: "Indexed lookup",
+    sql: "SELECT name, country FROM users WHERE id = 42" },
+  { label: "Group by",
+    sql: "SELECT status, amount FROM orders WHERE status = 'paid' GROUP BY status" },
+  { label: "Seq scan",
+    sql: "SELECT name FROM users WHERE age > 30 ORDER BY name LIMIT 5" }
+];
+
+/* ============================================================
+   9. WIRING / STATE
+   ============================================================ */
+let STATE = { ast: null, naive: null, opt: null, steps: [], stepIdx: 0 };
+
+function renderSchema() {
+  const wrap = $("schema"); wrap.innerHTML = "";
+  Object.values(CATALOG).forEach(t => {
+    const card = document.createElement("div"); card.className = "tbl-card";
+    const cols = t.cols.map(c => {
+      const idx = t.indexes[c];
+      return idx ? '<span class="idx">' + c + '<span class="tag">idx</span></span>' : c;
+    }).join(", ");
+    card.innerHTML = '<div><span class="tname">' + t.name + '</span>' +
+      '<span class="rows">' + t.rows.toLocaleString() + ' rows</span></div>' +
+      '<div class="cols">' + cols + '</div>';
+    wrap.appendChild(card);
+  });
+}
+
+function renderExamples() {
+  const wrap = $("examples"); wrap.innerHTML = "";
+  EXAMPLES.forEach(ex => {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = ex.label;
+    b.onclick = () => { $("sql").value = ex.sql; runPlan(); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderRules() {
+  const ul = $("rules"); ul.innerHTML = "";
+  STATE.steps.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="n">' + (i + 1) + '.</span><div><b>' + s.title + '</b><br><span style="color:var(--ink-dim)">' + s.body + '</span></div>';
+    if (i < STATE.stepIdx) li.classList.add("done");
+    if (i === STATE.stepIdx - 1) { li.classList.remove("done"); li.classList.add("active"); }
+    ul.appendChild(li);
+  });
+}
+
+function updateStepUI() {
+  const total = STATE.steps.length;
+  $("stepcount").textContent = STATE.stepIdx + " / " + total;
+  if (STATE.stepIdx === 0) {
+    $("readout").innerHTML = '<span class="k">Ready.</span> Optimized plan shown. Press Step to replay each rewrite rule.';
+  } else {
+    const s = STATE.steps[STATE.stepIdx - 1];
+    $("readout").innerHTML = '<span class="k">' + s.title + '</span> — ' + s.body;
+  }
+  $("step").disabled = STATE.stepIdx >= total;
+  $("reset").disabled = STATE.stepIdx === 0;
+  renderRules();
+  // highlight nodes relevant to current step on optimized plan
+  let hl = null;
+  if (STATE.stepIdx > 0) {
+    const title = STATE.steps[STATE.stepIdx - 1].title;
+    hl = n => {
+      if (title.indexOf("Index") === 0 || title.indexOf("Index vs") === 0) return n.op === "IndexScan" || n.op === "SeqScan";
+      if (title.indexOf("Predicate") === 0) return n.label.indexOf("Filter ↓") === 0;
+      if (title.indexOf("Join") === 0) return /Join/.test(n.op);
+      if (title.indexOf("Projection") === 0) return n.label.indexOf("Project ↓") === 0;
+      if (title.indexOf("Top") === 0) return ["Aggregate","Sort","Limit"].includes(n.op);
+      return false;
+    };
+  }
+  renderTree($("opt"), STATE.opt, { highlight: hl });
+}
+
+function runPlan() {
+  const sql = $("sql").value.trim();
+  $("err").style.display = "none";
+  try {
+    const ast = parse(sql);
+    const logical = buildLogical(ast);
+    const naive = buildNaive(ast);
+    const opt = buildOptimized(ast);
+    STATE = { ast, naive, opt, steps: buildRewriteSteps(ast), stepIdx: 0 };
+
+    renderTree($("logical"), logical);
+    renderTree($("naive"), naive);
+    renderTree($("opt"), opt);
+
+    const nc = totalCost(naive), oc = totalCost(opt);
+    $("naive-cost").textContent = "Σcost " + fmt(nc);
+    $("opt-cost").textContent = "Σcost " + fmt(oc);
+
+    const speedup = oc > 0 ? (nc / oc) : 1;
+    $("summary").innerHTML =
+      '<div class="metric"><div class="k">Naive Σcost</div><div class="v" style="color:var(--sell)">' + fmt(nc) + '</div></div>' +
+      '<div class="metric"><div class="k">Optimized Σcost</div><div class="v" style="color:var(--buy)">' + fmt(oc) + '</div></div>' +
+      '<div class="metric win"><div class="k">Speedup</div><div class="v">' + speedup.toFixed(1) + '×</div></div>';
+
+    $("step").disabled = false;
+    $("reset").disabled = true;
+    updateStepUI();
+  } catch (e) {
+    $("err").style.display = "block";
+    $("err").textContent = "Parse error: " + e.message;
+    $("step").disabled = true; $("reset").disabled = true;
+  }
+}
+
+/* theme */
+function applyTheme(val) {
+  document.documentElement.setAttribute("data-theme", val);
+  document.querySelectorAll("#theme-toggle button").forEach(b =>
+    b.classList.toggle("active", b.dataset.themeVal === val));
+  try { localStorage.setItem("sqlopt-theme", val); } catch (e) {}
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  renderSchema();
+  renderExamples();
+  $("sql").value = EXAMPLES[0].sql;
+
+  $("run").onclick = runPlan;
+  $("step").onclick = () => { if (STATE.stepIdx < STATE.steps.length) { STATE.stepIdx++; updateStepUI(); } };
+  $("reset").onclick = () => { STATE.stepIdx = 0; updateStepUI(); };
+
+  $("theme-toggle").addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (b) applyTheme(b.dataset.themeVal);
+  });
+  let saved = "dark";
+  try { saved = localStorage.getItem("sqlopt-theme") || "dark"; } catch (e) {}
+  applyTheme(saved);
+
+  runPlan();
+});
+</script>
+</body>
+</html>

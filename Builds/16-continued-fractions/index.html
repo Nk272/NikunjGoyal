@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Continued Fractions &amp; Padé Approximants — Nikunj Goyal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<!-- KaTeX for clean math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #0E1220;
+    --surface: #161B2E;
+    --surface-2: #1E2540;
+    --line: #29314F;
+    --line-soft: #20273f;
+    --ink: #ECE7DA;
+    --ink-dim: #8C93AD;
+    --ink-faint: #5A6080;
+    --gold: #E8B24B;
+    --gold-soft: rgba(232, 178, 75, 0.14);
+    --teal: #38C6A0;
+    --coral: #E8675A;
+    --violet: #9C7BE8;
+    --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --radius: 10px;
+  }
+
+  [data-theme="light"] {
+    --bg: #F4F1E8;
+    --surface: #FFFFFF;
+    --surface-2: #F1EDE1;
+    --line: #DCD6C6;
+    --line-soft: #E8E3D5;
+    --ink: #20242F;
+    --ink-dim: #5C6276;
+    --ink-faint: #9197A8;
+    --gold: #B47D1E;
+    --gold-soft: rgba(180, 125, 30, 0.14);
+    --teal: #1B9C77;
+    --coral: #CC4636;
+    --violet: #6F4FC4;
+  }
+  @media (prefers-color-scheme: light) {
+    [data-theme="system"] {
+      --bg: #F4F1E8;
+      --surface: #FFFFFF;
+      --surface-2: #F1EDE1;
+      --line: #DCD6C6;
+      --line-soft: #E8E3D5;
+      --ink: #20242F;
+      --ink-dim: #5C6276;
+      --ink-faint: #9197A8;
+      --gold: #B47D1E;
+      --gold-soft: rgba(180, 125, 30, 0.14);
+      --teal: #1B9C77;
+      --coral: #CC4636;
+      --violet: #6F4FC4;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, var(--gold-soft), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background .2s, color .2s;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 22px 56px; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .mark {
+    font-family: var(--display); font-weight: 700; letter-spacing: -0.02em;
+    font-size: 27px; line-height: 1; color: var(--ink);
+    display: inline-flex; align-items: baseline; gap: 2px;
+  }
+  .mark .dot { color: var(--gold); }
+  .tagline {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+    letter-spacing: 0.02em; max-width: 460px;
+  }
+  .tagline b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle {
+    margin-left: auto; align-self: center; display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    appearance: none; cursor: pointer; background: transparent; border: none;
+    color: var(--ink-dim); font-family: var(--mono); font-size: 11px;
+    padding: 5px 10px; border-radius: 6px; transition: background .15s, color .15s;
+  }
+  .theme-toggle button:hover { color: var(--ink); }
+  .theme-toggle button.active { background: var(--gold); color: #2a1f06; font-weight: 600; }
+
+  /* ---------- panels ---------- */
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); margin-bottom: 18px;
+  }
+  .panel-h {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-faint);
+    padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .panel-h .hnum { color: var(--gold); }
+  .panel-b { padding: 16px; }
+
+  .prose { color: var(--ink-dim); font-size: 14px; line-height: 1.7; }
+  .prose p { margin: 0 0 12px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose b, .prose strong { color: var(--ink); font-weight: 600; }
+  .prose .gold { color: var(--gold); }
+  .lead { font-size: 14.5px; color: var(--ink); }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip {
+    appearance: none; cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--ink-dim); font-family: var(--mono); font-size: 12px;
+    padding: 7px 13px; border-radius: 8px;
+    transition: border-color .15s, background .15s, color .15s;
+  }
+  .chip:hover { border-color: var(--ink-faint); color: var(--ink); }
+  .chip[aria-pressed="true"] {
+    background: var(--gold); color: #2a1f06; border-color: var(--gold); font-weight: 600;
+  }
+  .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .field { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .field label { font-size: 12.5px; color: var(--ink-dim); font-family: var(--mono); }
+  input[type="text"], input[type="number"] {
+    background: var(--bg); border: 1px solid var(--line); color: var(--ink);
+    font-family: var(--mono); font-size: 13px; padding: 8px 11px;
+    border-radius: 8px; outline: none; width: 180px;
+  }
+  input[type="text"]:focus, input[type="number"]:focus { border-color: var(--gold); }
+  input[type="number"] { width: 72px; }
+
+  .ctrl label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12.5px; color: var(--ink-dim); margin-bottom: 7px; font-family: var(--mono);
+  }
+  .ctrl label .val { font-family: var(--mono); color: var(--gold); font-size: 13px; }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: var(--line); border-radius: 4px; outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--gold); border: 2px solid var(--bg); cursor: pointer; transition: transform .1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; background: var(--gold);
+    border: 2px solid var(--bg); cursor: pointer;
+  }
+
+  /* ---------- continued fraction display ---------- */
+  .cf-line {
+    font-family: var(--mono); font-size: 15px; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line-soft); border-radius: 8px;
+    padding: 13px 15px; overflow-x: auto; white-space: nowrap; line-height: 1.6;
+  }
+  .cf-line .a0 { color: var(--gold); font-weight: 600; }
+  .cf-line .ai { color: var(--teal); }
+  .cf-line .sep { color: var(--ink-faint); }
+
+  .katex-block {
+    background: var(--bg); border: 1px solid var(--line-soft); border-radius: 8px;
+    padding: 14px 15px; overflow-x: auto; margin: 0 0 14px;
+  }
+
+  /* ---------- table ---------- */
+  .tbl-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+  thead th {
+    text-align: right; color: var(--ink-faint); font-weight: 500; font-size: 10.5px;
+    letter-spacing: 0.08em; text-transform: uppercase; padding: 0 12px 9px;
+    border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  thead th:first-child, tbody td:first-child { text-align: left; }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid var(--line-soft); color: var(--ink-dim); text-align: right; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td.idx { color: var(--ink-faint); }
+  tbody td .frac { color: var(--gold); }
+  tbody td .err { color: var(--teal); }
+  tbody tr.best td .frac { color: var(--gold); font-weight: 600; }
+
+  /* ---------- canvas plots ---------- */
+  .plot-card { margin-bottom: 18px; }
+  .plot-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 16px; border-bottom: 1px solid var(--line-soft); gap: 12px; flex-wrap: wrap;
+  }
+  .plot-title { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .legend { display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .swatch.exact { background: var(--ink); }
+  .swatch.taylor { background: var(--coral); }
+  .swatch.pade { background: var(--teal); }
+  .swatch.conv { background: var(--gold); }
+  canvas { display: block; width: 100%; height: auto; }
+  .plot-body { padding: 12px; }
+
+  /* ---------- metrics ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 0; }
+  .metric {
+    background: var(--bg); border: 1px solid var(--line-soft); border-radius: var(--radius);
+    padding: 13px 15px;
+  }
+  .metric .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .metric .v { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.02em; line-height: 1.1; }
+  .metric.accent .v { color: var(--gold); }
+
+  .note {
+    font-size: 12.5px; color: var(--ink-dim); font-family: var(--mono);
+    line-height: 1.6; margin-top: 12px; padding: 11px 13px;
+    background: var(--bg); border-left: 2px solid var(--gold); border-radius: 0 6px 6px 0;
+  }
+
+  .sec-intro { font-size: 13.5px; color: var(--ink-dim); margin: 0 0 14px; line-height: 1.65; }
+
+  .pade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) { .pade-grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr; } }
+
+  .matrix {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+    background: var(--bg); border: 1px solid var(--line-soft); border-radius: 8px;
+    padding: 12px; overflow-x: auto; line-height: 1.5; white-space: pre;
+  }
+
+  footer { margin-top: 30px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-align: center; line-height: 1.7; }
+  footer .dot { color: var(--gold); }
+
+  a { color: var(--gold); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .katex { font-size: 1.02em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark">Nikunj<span class="dot">.</span>Goyal</div>
+    <div class="tagline">Continued fractions, <b>Padé approximants</b>, and the analysis of power series &mdash; IntercontinentalBallisticMath</div>
+    <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+      <button data-theme-val="system">System</button>
+      <button data-theme-val="light">Light</button>
+      <button data-theme-val="dark">Dark</button>
+    </div>
+  </header>
+
+  <!-- ============ INTRO ============ -->
+  <section class="panel">
+    <div class="panel-h">Overview · <span class="hnum">the best rational approximations</span></div>
+    <div class="panel-b prose">
+      <p class="lead">Every real number hides a staircase of integers. The <span class="gold">continued fraction</span>
+      \([a_0; a_1, a_2, \dots]\) unfolds a number into its arithmetically optimal rational approximations &mdash; the
+      convergents \(p_k/q_k\). Their power-series cousins, the <span class="gold">Padé approximants</span>, do the
+      same for functions: they replace a truncated Taylor series with a ratio of polynomials that converges
+      far faster and even past the radius of convergence.</p>
+      <p>This page is interactive. Expand real numbers below, watch the convergent errors collapse, compare Padé
+      against Taylor on the same plot, and read how all of it ties into my summer research on <b>Hadamard gaps</b>.</p>
+    </div>
+  </section>
+
+  <!-- ============ CONTINUED FRACTIONS ============ -->
+  <section class="panel">
+    <div class="panel-h">I · Continued-fraction expansion</div>
+    <div class="panel-b">
+      <p class="sec-intro">Pick a constant or type your own real number. We compute the regular continued fraction
+        and the convergents \(p_k/q_k\) via the recurrence \(p_k = a_k p_{k-1} + p_{k-2}\), \(q_k = a_k q_{k-1} + q_{k-2}\).</p>
+
+      <div class="controls" id="cf-presets" role="group" aria-label="Preset numbers"></div>
+
+      <div class="field">
+        <label for="cf-input">value</label>
+        <input type="text" id="cf-input" value="3.14159265358979" autocomplete="off" spellcheck="false" />
+        <label for="cf-terms">terms</label>
+        <input type="number" id="cf-terms" value="12" min="1" max="30" />
+        <span style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)" id="cf-target"></span>
+      </div>
+
+      <div class="cf-line" id="cf-bracket"></div>
+      <div class="katex-block" id="cf-katex" style="margin-top:14px;"></div>
+
+      <div class="tbl-scroll">
+        <table id="cf-table">
+          <thead><tr><th>k</th><th>aₖ</th><th>convergent pₖ/qₖ</th><th>decimal</th><th>|error|</th><th>1/qₖ²</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note" id="cf-note"></div>
+    </div>
+  </section>
+
+  <!-- ============ BEST APPROX VISUAL ============ -->
+  <section class="panel plot-card">
+    <div class="plot-head">
+      <div class="plot-title">Why convergents are the <em>best</em> rational approximations</div>
+      <div class="legend">
+        <span><i class="swatch conv"></i>convergent pₖ/qₖ</span>
+        <span><i class="swatch taylor"></i>other rationals p/q</span>
+      </div>
+    </div>
+    <div class="plot-body">
+      <canvas id="best-canvas" width="900" height="360" aria-label="Approximation quality plot"></canvas>
+      <p class="sec-intro" style="margin:12px 0 0;">Each dot is a rational \(p/q\) plotted at \((q,\ q\,|x-p/q|)\) on a log
+        vertical axis. <span style="color:var(--gold)">Gold</span> convergents sit on the <b>lower frontier</b>: no fraction with a
+        smaller (or equal) denominator approximates \(x\) better. This is Lagrange's theorem &mdash; convergents are <em>best
+        approximations of the second kind</em>. Large partial quotients \(a_k\) (e.g. \(\pi\)'s famous \(a_2=15,\ a_4=292\))
+        produce especially deep dips: superb approximations like \(\tfrac{22}{7}\) and \(\tfrac{355}{113}\).</p>
+    </div>
+  </section>
+
+  <!-- ============ ERROR DECAY ============ -->
+  <section class="panel plot-card">
+    <div class="plot-head">
+      <div class="plot-title">Error of convergents shrinking</div>
+      <div class="legend">
+        <span><i class="swatch conv"></i>|x − pₖ/qₖ|</span>
+        <span><i class="swatch taylor"></i>bound 1/qₖ²</span>
+      </div>
+    </div>
+    <div class="plot-body">
+      <canvas id="err-canvas" width="900" height="320" aria-label="Error decay plot"></canvas>
+    </div>
+  </section>
+
+  <!-- ============ PADE ============ -->
+  <section class="panel">
+    <div class="panel-h">II · Padé approximants</div>
+    <div class="panel-b">
+      <p class="sec-intro">A Padé approximant \([m/n]\) of a power series \(f(x)=\sum c_k x^k\) is the rational
+        function \(\dfrac{P_m(x)}{Q_n(x)}\) (with \(Q_n(0)=1\)) whose Taylor series matches \(f\) through order \(x^{m+n}\).
+        It is, in a precise sense, the continued-fraction idea applied to <em>functions</em>. Choose a series and the
+        \([m/n]\) orders, then compare against the truncated Taylor polynomial of the same total degree.</p>
+
+      <div class="controls" id="pade-presets" role="group" aria-label="Series choices"></div>
+
+      <div class="pade-grid">
+        <div>
+          <div class="ctrl" style="margin-bottom:14px;">
+            <label>numerator degree m <span class="val" id="m-val">3</span></label>
+            <input type="range" id="m-slider" min="1" max="6" value="3" />
+          </div>
+          <div class="ctrl" style="margin-bottom:14px;">
+            <label>denominator degree n <span class="val" id="n-val">3</span></label>
+            <input type="range" id="n-slider" min="1" max="6" value="3" />
+          </div>
+          <div class="katex-block" id="pade-series" style="font-size:13px;"></div>
+          <div class="katex-block" id="pade-rational"></div>
+        </div>
+        <div>
+          <div class="matrix" id="pade-coeffs"></div>
+          <div class="metrics" style="margin-top:14px;grid-template-columns:1fr 1fr;">
+            <div class="metric accent"><div class="k">Padé max error</div><div class="v" id="pade-err">—</div></div>
+            <div class="metric"><div class="k">Taylor max error</div><div class="v" id="taylor-err">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PADE PLOT ============ -->
+  <section class="panel plot-card">
+    <div class="plot-head">
+      <div class="plot-title">Padé <span style="color:var(--ink-dim)">vs</span> Taylor <span style="color:var(--ink-dim)">vs</span> exact</div>
+      <div class="legend">
+        <span><i class="swatch exact"></i>exact f(x)</span>
+        <span><i class="swatch taylor"></i>Taylor (deg m+n)</span>
+        <span><i class="swatch pade"></i>Padé [m/n]</span>
+      </div>
+    </div>
+    <div class="plot-body">
+      <canvas id="pade-canvas" width="900" height="380" aria-label="Padé vs Taylor plot"></canvas>
+      <p class="sec-intro" style="margin:12px 0 0;" id="pade-caption"></p>
+    </div>
+  </section>
+
+  <!-- ============ HADAMARD GAPS ============ -->
+  <section class="panel">
+    <div class="panel-h">III · Continued fractions, Padé &amp; Hadamard gaps</div>
+    <div class="panel-b prose">
+      <p>The thread connecting both halves of this page is <b>rational approximation as a microscope on convergence</b>.
+        A continued fraction reorganizes a real number so that the next integer \(a_{k}\) tells you exactly how much
+        accuracy the next convergent buys. A Padé table does the same for a function: the location of its poles reveals
+        the singularities of \(f\) that a Taylor series can only feel as a shrinking radius of convergence.</p>
+
+      <p>A <span class="gold">Hadamard gap series</span> (lacunary series) is one of the form
+        \(\displaystyle f(z)=\sum_{k} c_k z^{n_k}\) where the exponents grow geometrically,
+        \(n_{k+1}/n_k \ge \lambda > 1\). The Hadamard gap theorem says such a series has its circle of convergence as a
+        <b>natural boundary</b>: it cannot be analytically continued past \(|z|=R\) anywhere. The function is, in a strong
+        sense, trapped inside its disk.</p>
+
+      <p>In my summer-intern research I studied <b>Padé approximants of Hadamard-gap series</b>. The question: if a
+        function's Taylor series is mostly zeros (a gap structure), what do its Padé approximants do? The poles of the
+        \([m/n]\) approximants <em>cluster on the natural boundary</em>, tracing out the circle the function can never
+        cross. Where ordinary series merely fail to converge, the Padé denominators \(Q_n\) actively map the wall &mdash;
+        their zeros accumulate densely on \(|z|=R\). The gap structure that makes the boundary natural is exactly what
+        organizes the pole distribution, and the spacing of the gaps controls how the convergents (now in the
+        <b>function</b> sense) line up &mdash; a direct echo of how the partial quotients \(a_k\) control the convergents
+        of a real number above.</p>
+
+      <p class="sec-intro" style="margin:14px 0 0;">In short: continued fractions and Padé approximants are the same
+        instinct &mdash; <b>fold the object into a sequence of best rational pieces</b> &mdash; applied to numbers and to
+        analytic functions respectively. Hadamard gaps are where that instinct meets the hard limit of analytic
+        continuation, and the Padé poles draw the limit for you.</p>
+    </div>
+  </section>
+
+  <footer>
+    Single-file static app &middot; pure-JS arithmetic, no plotting libraries &middot; math typeset with KaTeX<br/>
+    Nikunj<span class="dot">.</span>Goyal &middot; B.Tech Applied Mathematics, IIT Roorkee &middot; IntercontinentalBallisticMath
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+ *  PART 0 — utilities
+ * ============================================================ */
+const $ = id => document.getElementById(id);
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+/* ============================================================
+ *  PART 1 — Continued fractions (regular CF + convergents)
+ * ============================================================ */
+
+// Compute regular continued fraction [a0; a1, a2, ...] of x, up to `terms`
+// partial quotients. Uses high-precision-ish float; stops if remainder tiny.
+function continuedFraction(x, terms){
+  const a = [];
+  let val = x;
+  for(let i=0;i<terms;i++){
+    const ai = Math.floor(val);
+    a.push(ai);
+    const frac = val - ai;
+    if(frac < 1e-12) break;       // terminating (rational) or numerical floor
+    val = 1/frac;
+    if(!isFinite(val)) break;
+  }
+  return a;
+}
+
+// Convergents from partial quotients via the standard recurrence.
+// Returns array of {a, p, q} where p/q is the kth convergent.
+function convergents(a){
+  const out = [];
+  let pm1 = 1, pm2 = 0;   // p_{-1}=1, p_{-2}=0
+  let qm1 = 0, qm2 = 1;   // q_{-1}=0, q_{-2}=1
+  for(let k=0;k<a.length;k++){
+    const p = a[k]*pm1 + pm2;
+    const q = a[k]*qm1 + qm2;
+    out.push({a:a[k], p, q});
+    pm2 = pm1; pm1 = p;
+    qm2 = qm1; qm1 = q;
+  }
+  return out;
+}
+
+const CF_PRESETS = [
+  {id:"pi",    label:"π",          value:Math.PI,                 latex:"\\pi"},
+  {id:"e",     label:"e",          value:Math.E,                  latex:"e"},
+  {id:"sqrt2", label:"√2",         value:Math.SQRT2,              latex:"\\sqrt{2}"},
+  {id:"phi",   label:"φ (golden)", value:(1+Math.sqrt(5))/2,      latex:"\\varphi=\\tfrac{1+\\sqrt5}{2}"},
+  {id:"sqrt3", label:"√3",         value:Math.sqrt(3),            latex:"\\sqrt{3}"},
+  {id:"gamma", label:"γ (Euler)",  value:0.5772156649015329,      latex:"\\gamma"},
+];
+
+let cfState = { value: Math.PI, latex:"\\pi", terms: 12 };
+
+function renderCFPresets(){
+  const box = $("cf-presets");
+  box.innerHTML = "";
+  CF_PRESETS.forEach(p=>{
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = p.label;
+    b.setAttribute("aria-pressed", Math.abs(p.value-cfState.value)<1e-12);
+    b.addEventListener("click", ()=>{
+      cfState.value = p.value;
+      cfState.latex = p.latex;
+      $("cf-input").value = p.value.toString().slice(0,17);
+      renderCF();
+    });
+    box.appendChild(b);
+  });
+}
+
+function fmtFrac(p,q){ return p+"/"+q; }
+
+function renderCF(){
+  const x = cfState.value;
+  const terms = cfState.terms;
+  const a = continuedFraction(x, terms);
+  const conv = convergents(a);
+
+  // update preset pressed state
+  document.querySelectorAll("#cf-presets .chip").forEach((b,i)=>{
+    b.setAttribute("aria-pressed", Math.abs(CF_PRESETS[i].value-x)<1e-12);
+  });
+
+  $("cf-target").textContent = "x ≈ " + x.toPrecision(14);
+
+  // bracket notation [a0; a1, a2, ...]
+  let html = '<span class="sep">[</span><span class="a0">'+a[0]+'</span>';
+  if(a.length>1){
+    html += '<span class="sep">; </span>';
+    html += a.slice(1).map(v=>'<span class="ai">'+v+'</span>').join('<span class="sep">, </span>');
+  }
+  html += '<span class="sep">]</span>';
+  $("cf-bracket").innerHTML = html;
+
+  // KaTeX nested fraction (first ~5 levels for readability)
+  const depth = Math.min(a.length, 6);
+  let cf = ""+a[depth-1];
+  for(let i=depth-2;i>=0;i--){
+    cf = a[i] + " + \\cfrac{1}{" + cf + "}";
+  }
+  const tail = a.length>depth ? "\\,+\\,\\cdots" : "";
+  const katexSrc = cfState.latex + " = " + cf + tail;
+  try { katex.render(katexSrc, $("cf-katex"), {displayMode:true, throwOnError:false}); }
+  catch(e){ $("cf-katex").textContent = katexSrc; }
+
+  // table
+  const tbody = $("cf-table").querySelector("tbody");
+  tbody.innerHTML = "";
+  let bestErr = Infinity;
+  conv.forEach(c=>{ const e=Math.abs(x - c.p/c.q); if(e<bestErr) bestErr=e; });
+  conv.forEach((c,k)=>{
+    const dec = c.p/c.q;
+    const err = Math.abs(x - dec);
+    const bound = 1/(c.q*c.q);
+    const tr = document.createElement("tr");
+    if(err===bestErr) tr.className="best";
+    tr.innerHTML =
+      '<td class="idx">'+k+'</td>'+
+      '<td>'+c.a+'</td>'+
+      '<td><span class="frac">'+fmtFrac(c.p,c.q)+'</span></td>'+
+      '<td>'+dec.toPrecision(12)+'</td>'+
+      '<td><span class="err">'+(err===0?'0':err.toExponential(3))+'</span></td>'+
+      '<td>'+bound.toExponential(3)+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  // note about largest partial quotient
+  let maxA=0, maxIdx=0;
+  for(let i=1;i<a.length;i++){ if(a[i]>maxA){maxA=a[i];maxIdx=i;} }
+  const bestConv = conv.reduce((b,c)=> Math.abs(x-c.p/c.q) < Math.abs(x-b.p/b.q) ? c : b, conv[0]);
+  $("cf-note").innerHTML =
+    "Largest partial quotient a<sub>"+maxIdx+"</sub> = "+maxA+
+    " &rarr; the convergent just before it, "+ (conv[maxIdx-1]?conv[maxIdx-1].p+"/"+conv[maxIdx-1].q:"—") +
+    ", is an unusually good approximation. Best convergent shown: "+bestConv.p+"/"+bestConv.q+
+    " with error "+Math.abs(x-bestConv.p/bestConv.q).toExponential(3)+".";
+
+  drawBestApprox(x, conv);
+  drawErrDecay(x, conv);
+}
+
+/* ============================================================
+ *  PART 2 — "best approximation" scatter on a canvas
+ * ============================================================ */
+function setupHiDPI(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || canvas.width;
+  const ratio = canvas.width / canvas.height;
+  const cssH = cssW / ratio;
+  canvas.style.height = cssH + "px";
+  if(canvas._dpr !== dpr || canvas._w !== cssW){
+    canvas.width = Math.round(cssW*dpr);
+    canvas.height = Math.round(cssH*dpr);
+    canvas._dpr = dpr; canvas._w = cssW;
+  }
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, W:cssW, H:cssH};
+}
+
+function drawBestApprox(x, conv){
+  const canvas = $("best-canvas");
+  const {ctx, W, H} = setupHiDPI(canvas);
+  ctx.clearRect(0,0,W,H);
+  const ink=cssVar("--ink"), dim=cssVar("--ink-dim"), faint=cssVar("--ink-faint"),
+        line=cssVar("--line-soft"), gold=cssVar("--gold"), coral=cssVar("--coral");
+  const padL=58, padR=18, padT=18, padB=38;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+
+  const maxQ = Math.min(conv[conv.length-1].q, 400);
+  // metric: q*|x - p/q|  (best approx of 2nd kind => small)
+  const pts = [];
+  let minY=Infinity, maxY=-Infinity;
+  for(let q=1;q<=maxQ;q++){
+    const p = Math.round(x*q);
+    const m = q*Math.abs(x - p/q);
+    if(m<=0) continue;
+    pts.push({q,m,conv:false});
+    if(m<minY)minY=m; if(m>maxY)maxY=m;
+  }
+  const convSet = new Set();
+  conv.forEach(c=>{ if(c.q<=maxQ){ const m=c.q*Math.abs(x-c.p/c.q); if(m>0){ convSet.add(c.q); if(m<minY)minY=m; } } });
+  if(!isFinite(minY)||minY<=0) minY=1e-6;
+  const logMin=Math.log10(minY), logMax=Math.log10(maxY);
+  const span = (logMax-logMin)||1;
+
+  const sx = q => padL + (q/maxQ)*plotW;
+  const sy = m => padT + (1-(Math.log10(m)-logMin)/span)*plotH;
+
+  // axes
+  ctx.strokeStyle=line; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=faint; ctx.font="10px 'IBM Plex Mono', monospace";
+  // y gridlines (powers of 10)
+  for(let e=Math.ceil(logMin); e<=Math.floor(logMax); e++){
+    const yy=sy(Math.pow(10,e));
+    ctx.strokeStyle=line; ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+plotW,yy); ctx.stroke();
+    ctx.fillStyle=faint; ctx.textAlign="right"; ctx.fillText("10"+supScript(e), padL-6, yy+3);
+  }
+  ctx.textAlign="center";
+  for(let g=0; g<=4; g++){
+    const q=Math.round(maxQ*g/4);
+    ctx.fillText(q, sx(q), padT+plotH+14);
+  }
+  ctx.fillStyle=dim; ctx.fillText("denominator q", padL+plotW/2, padT+plotH+30);
+  ctx.save(); ctx.translate(14, padT+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText("q · |x − p/q|   (log)", 0, 0); ctx.restore();
+
+  // ordinary rationals
+  ctx.fillStyle = coral;
+  pts.forEach(pt=>{
+    if(convSet.has(pt.q)) return;
+    ctx.globalAlpha=0.35;
+    ctx.beginPath(); ctx.arc(sx(pt.q), sy(pt.m), 1.6, 0, 2*Math.PI); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  // convergents on top
+  conv.forEach(c=>{
+    if(c.q>maxQ) return;
+    const m=c.q*Math.abs(x-c.p/c.q);
+    if(m<=0) return;
+    const X=sx(c.q), Y=sy(m);
+    ctx.fillStyle=gold;
+    ctx.beginPath(); ctx.arc(X,Y,4,0,2*Math.PI); ctx.fill();
+    ctx.strokeStyle=cssVar("--bg"); ctx.lineWidth=1.2; ctx.stroke();
+    ctx.fillStyle=ink; ctx.font="10px 'IBM Plex Mono', monospace"; ctx.textAlign="center";
+    if(c.q>4) ctx.fillText(c.p+"/"+c.q, X, Y-9);
+  });
+}
+function supScript(e){
+  const map={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+  return String(e).split("").map(c=>map[c]||c).join("");
+}
+
+/* ============================================================
+ *  PART 3 — error decay plot
+ * ============================================================ */
+function drawErrDecay(x, conv){
+  const canvas=$("err-canvas");
+  const {ctx,W,H}=setupHiDPI(canvas);
+  ctx.clearRect(0,0,W,H);
+  const ink=cssVar("--ink"), dim=cssVar("--ink-dim"), faint=cssVar("--ink-faint"),
+        line=cssVar("--line-soft"), gold=cssVar("--gold"), coral=cssVar("--coral");
+  const padL=58,padR=18,padT=18,padB=38;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+
+  const data = conv.map((c,k)=>({k, err:Math.abs(x-c.p/c.q), bound:1/(c.q*c.q)}))
+                   .filter(d=>d.err>0);
+  if(data.length<2){ ctx.fillStyle=dim; ctx.font="13px monospace"; ctx.fillText("Exact rational — error is 0.", padL, padT+plotH/2); return; }
+  let minY=Infinity,maxY=-Infinity;
+  data.forEach(d=>{ minY=Math.min(minY,d.err,d.bound); maxY=Math.max(maxY,d.err,d.bound); });
+  const logMin=Math.log10(minY), logMax=Math.log10(maxY), span=(logMax-logMin)||1;
+  const n=data.length;
+  const sx=k=> padL + (n<=1?0:k/(n-1))*plotW;
+  const sy=v=> padT + (1-(Math.log10(v)-logMin)/span)*plotH;
+
+  ctx.strokeStyle=line; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=faint; ctx.font="10px 'IBM Plex Mono', monospace";
+  for(let e=Math.ceil(logMin); e<=Math.floor(logMax); e++){
+    const yy=sy(Math.pow(10,e));
+    ctx.strokeStyle=line; ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+plotW,yy); ctx.stroke();
+    ctx.fillStyle=faint; ctx.textAlign="right"; ctx.fillText("10"+supScript(e), padL-6, yy+3);
+  }
+  ctx.textAlign="center";
+  data.forEach(d=> ctx.fillText("k="+d.k, sx(d.k), padT+plotH+14));
+  ctx.fillStyle=dim; ctx.fillText("convergent index k", padL+plotW/2, padT+plotH+30);
+
+  // bound line 1/q^2
+  ctx.strokeStyle=coral; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  ctx.beginPath(); data.forEach((d,i)=>{ const X=sx(d.k),Y=sy(d.bound); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // error line
+  ctx.strokeStyle=gold; ctx.lineWidth=2.2;
+  ctx.beginPath(); data.forEach((d,i)=>{ const X=sx(d.k),Y=sy(d.err); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}); ctx.stroke();
+  data.forEach(d=>{ const X=sx(d.k),Y=sy(d.err); ctx.fillStyle=gold; ctx.beginPath(); ctx.arc(X,Y,3.2,0,2*Math.PI); ctx.fill(); });
+}
+
+/* ============================================================
+ *  PART 4 — Padé approximants
+ *  Given Taylor coefficients c[0..m+n], solve for P (deg m), Q (deg n)
+ *  with Q(0)=1 and (P - Q*series) = O(x^{m+n+1}).
+ * ============================================================ */
+
+// Solve linear system A x = b via Gaussian elimination (partial pivot).
+function solveLinear(A, b){
+  const n=b.length;
+  const M = A.map((row,i)=>row.slice().concat(b[i]));
+  for(let col=0; col<n; col++){
+    let piv=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(M[r][col])>Math.abs(M[piv][col])) piv=r;
+    if(Math.abs(M[piv][col])<1e-14) continue;
+    [M[col],M[piv]]=[M[piv],M[col]];
+    const d=M[col][col];
+    for(let c=col;c<=n;c++) M[col][c]/=d;
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const f=M[r][col];
+      for(let c=col;c<=n;c++) M[r][c]-=f*M[col][c];
+    }
+  }
+  return M.map(row=>row[n]);
+}
+
+// Returns {P:[...], Q:[...]} arrays of coefficients (low->high). Q[0]=1.
+function padeApproximant(c, m, n){
+  // Denominator: solve for q1..qn from
+  //   sum_{j=1}^{n} c[m+i-j] q_j = -c[m+i],  i=1..n
+  let q=[1];
+  if(n>0){
+    const A=[], b=[];
+    for(let i=1;i<=n;i++){
+      const row=[];
+      for(let j=1;j<=n;j++){
+        const idx=m+i-j;
+        row.push(idx>=0 ? c[idx] : 0);
+      }
+      A.push(row);
+      b.push(-(c[m+i]!==undefined?c[m+i]:0));
+    }
+    const sol=solveLinear(A,b);
+    q=[1].concat(sol);
+  }
+  // Numerator: p_i = sum_{j=0}^{i} c[i-j] q_j,  i=0..m
+  const p=[];
+  for(let i=0;i<=m;i++){
+    let s=0;
+    for(let j=0;j<=Math.min(i,n);j++){
+      s += (c[i-j]!==undefined?c[i-j]:0) * q[j];
+    }
+    p.push(s);
+  }
+  return {P:p, Q:q};
+}
+
+function polyEval(coef, x){
+  let s=0;
+  for(let i=coef.length-1;i>=0;i--) s=s*x+coef[i];
+  return s;
+}
+function padeEval(pq, x){ return polyEval(pq.P,x)/polyEval(pq.Q,x); }
+function taylorEval(c, deg, x){
+  let s=0;
+  for(let i=0;i<=deg && i<c.length;i++) s += c[i]*Math.pow(x,i);
+  return s;
+}
+
+// Series library: coefficients c[k], exact f, domain, latex
+const SERIES = [
+  { id:"exp", label:"eˣ", latex:"e^x=\\sum_{k\\ge0}\\frac{x^k}{k!}",
+    coef:k=>1/factorial(k), f:x=>Math.exp(x), x0:-3, x1:3 },
+  { id:"log", label:"ln(1+x)", latex:"\\ln(1+x)=\\sum_{k\\ge1}\\frac{(-1)^{k+1}}{k}x^k",
+    coef:k=> k===0?0: (k%2? 1/k : -1/k), f:x=>Math.log(1+x), x0:-0.9, x1:3 },
+  { id:"atan", label:"arctan x", latex:"\\arctan x=\\sum_{k\\ge0}\\frac{(-1)^{k}}{2k+1}x^{2k+1}",
+    coef:k=> (k%2===0)?0: ( ((k-1)/2)%2===0 ? 1/k : -1/k ), f:x=>Math.atan(x), x0:-3, x1:3 },
+  { id:"geom", label:"1/(1+x)", latex:"\\frac{1}{1+x}=\\sum_{k\\ge0}(-1)^k x^k",
+    coef:k=> (k%2===0?1:-1), f:x=>1/(1+x), x0:-0.95, x1:4 },
+  { id:"sqrt", label:"√(1+x)", latex:"\\sqrt{1+x}=\\sum_{k\\ge0}\\binom{1/2}{k}x^k",
+    coef:k=>binom(0.5,k), f:x=>Math.sqrt(1+x), x0:-0.95, x1:5 },
+];
+function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+function binom(a,k){ let r=1; for(let i=0;i<k;i++) r*= (a-i)/(i+1); return r; }
+
+let padeState = { series: SERIES[0], m:3, n:3 };
+
+function renderPadePresets(){
+  const box=$("pade-presets"); box.innerHTML="";
+  SERIES.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="chip"; b.textContent=s.label;
+    b.setAttribute("aria-pressed", s.id===padeState.series.id);
+    b.addEventListener("click", ()=>{ padeState.series=s; renderPade(); });
+    box.appendChild(b);
+  });
+}
+
+function renderPade(){
+  const s=padeState.series, m=padeState.m, n=padeState.n;
+  document.querySelectorAll("#pade-presets .chip").forEach((b,i)=>{
+    b.setAttribute("aria-pressed", SERIES[i].id===s.id);
+  });
+  $("m-val").textContent=m; $("n-val").textContent=n;
+
+  // build Taylor coefficients up to m+n
+  const N=m+n;
+  const c=[]; for(let k=0;k<=N;k++) c.push(s.coef(k));
+
+  const pq=padeApproximant(c, m, n);
+
+  // series latex
+  try{ katex.render(s.latex, $("pade-series"), {displayMode:true, throwOnError:false}); }
+  catch(e){ $("pade-series").textContent=s.latex; }
+
+  // rational latex
+  const Pl=polyLatex(pq.P), Ql=polyLatex(pq.Q);
+  const ratSrc="[\\,"+m+"/"+n+"\\,]\\;=\\;\\dfrac{"+Pl+"}{"+Ql+"}";
+  try{ katex.render(ratSrc, $("pade-rational"), {displayMode:true, throwOnError:false}); }
+  catch(e){ $("pade-rational").textContent=ratSrc; }
+
+  // coefficient listing
+  let txt="Taylor coefficients  c[k]:\n";
+  c.forEach((v,k)=> txt += "  c["+k+"] = "+fmtNum(v)+"\n");
+  txt+="\nPadé numerator P (deg "+m+"):\n  "+pq.P.map(fmtNum).join(",  ");
+  txt+="\nPadé denominator Q (deg "+n+", Q(0)=1):\n  "+pq.Q.map(fmtNum).join(",  ");
+  $("pade-coeffs").textContent=txt;
+
+  drawPade(s, pq, c, m, n);
+}
+
+function fmtNum(v){
+  if(Math.abs(v)<1e-12) return "0";
+  if(Math.abs(v)>=1e4 || Math.abs(v)<1e-3) return v.toExponential(3);
+  return (Math.round(v*1e5)/1e5).toString();
+}
+function polyLatex(coef){
+  const terms=[];
+  coef.forEach((v,i)=>{
+    if(Math.abs(v)<1e-10) return;
+    const cv = (Math.round(v*1e4)/1e4);
+    let term;
+    if(i===0) term=cv.toString();
+    else {
+      const co = Math.abs(cv-1)<1e-9?"":(Math.abs(cv+1)<1e-9?"-":cv.toString());
+      term = co + (i===1?"x":"x^{"+i+"}");
+    }
+    terms.push({sign: v<0?"-":"+", term: term.replace(/^-/,"")});
+  });
+  if(terms.length===0) return "0";
+  let out = (terms[0].sign==="-"?"-":"") + terms[0].term;
+  for(let i=1;i<terms.length;i++) out += " "+terms[i].sign+" "+terms[i].term;
+  return out;
+}
+
+function drawPade(s, pq, c, m, n){
+  const canvas=$("pade-canvas");
+  const {ctx,W,H}=setupHiDPI(canvas);
+  ctx.clearRect(0,0,W,H);
+  const ink=cssVar("--ink"), dim=cssVar("--ink-dim"), faint=cssVar("--ink-faint"),
+        line=cssVar("--line-soft"), teal=cssVar("--teal"), coral=cssVar("--coral");
+  const padL=52,padR=18,padT=18,padB=40;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+
+  const x0=s.x0, x1=s.x1;
+  // sample exact to set y-range
+  const samples=600;
+  const xs=[], fe=[];
+  let ymin=Infinity, ymax=-Infinity;
+  for(let i=0;i<=samples;i++){
+    const x=x0+(x1-x0)*i/samples; xs.push(x);
+    const y=s.f(x); fe.push(y);
+    if(isFinite(y)){ ymin=Math.min(ymin,y); ymax=Math.max(ymax,y); }
+  }
+  // clamp y-range a bit around exact (Taylor/Pade can blow up)
+  let pad=(ymax-ymin)*0.6||1;
+  ymin-=pad*0.4; ymax+=pad*0.4;
+
+  const sx=x=> padL + (x-x0)/(x1-x0)*plotW;
+  const sy=y=> padT + (1-(y-ymin)/(ymax-ymin))*plotH;
+
+  // grid
+  ctx.strokeStyle=line; ctx.lineWidth=1; ctx.font="10px 'IBM Plex Mono', monospace";
+  ctx.fillStyle=faint;
+  for(let g=0;g<=6;g++){
+    const x=x0+(x1-x0)*g/6, X=sx(x);
+    ctx.strokeStyle=line; ctx.beginPath(); ctx.moveTo(X,padT); ctx.lineTo(X,padT+plotH); ctx.stroke();
+    ctx.textAlign="center"; ctx.fillStyle=faint; ctx.fillText(x.toFixed(1), X, padT+plotH+14);
+  }
+  for(let g=0;g<=4;g++){
+    const y=ymin+(ymax-ymin)*g/4, Y=sy(y);
+    ctx.strokeStyle=line; ctx.beginPath(); ctx.moveTo(padL,Y); ctx.lineTo(padL+plotW,Y); ctx.stroke();
+    ctx.textAlign="right"; ctx.fillStyle=faint; ctx.fillText(y.toFixed(1), padL-6, Y+3);
+  }
+  // x=0 axis emphasised
+  ctx.strokeStyle=faint; ctx.lineWidth=1.2;
+  const Zx=sx(0); ctx.beginPath(); ctx.moveTo(Zx,padT); ctx.lineTo(Zx,padT+plotH); ctx.stroke();
+  ctx.fillStyle=dim; ctx.textAlign="center"; ctx.fillText("x", padL+plotW/2, padT+plotH+30);
+
+  function plotCurve(fn, color, width, dash){
+    ctx.strokeStyle=color; ctx.lineWidth=width; ctx.setLineDash(dash||[]);
+    ctx.beginPath();
+    let pen=false;
+    for(let i=0;i<=samples;i++){
+      const x=xs[i], y=fn(x);
+      if(!isFinite(y) || y<ymin-1e6 || y>ymax+1e6){ pen=false; continue; }
+      const X=sx(x), Y=sy(Math.max(ymin-pad, Math.min(ymax+pad,y)));
+      if(Y<padT-50||Y>padT+plotH+50){ pen=false; continue; }
+      if(pen) ctx.lineTo(X,Y); else { ctx.moveTo(X,Y); pen=true; }
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // exact, taylor, pade
+  plotCurve(s.f, ink, 2.4);
+  plotCurve(x=>taylorEval(c, m+n, x), coral, 1.8, [5,4]);
+  plotCurve(x=>padeEval(pq, x), teal, 2.0);
+
+  // clip overlay region top/bottom
+  ctx.clearRect(0,0,W,padT); ctx.clearRect(0,padT+plotH,W,padB);
+  // redo x labels erased
+  ctx.fillStyle=faint; ctx.font="10px 'IBM Plex Mono', monospace"; ctx.textAlign="center";
+  for(let g=0;g<=6;g++){ const x=x0+(x1-x0)*g/6; ctx.fillText(x.toFixed(1), sx(x), padT+plotH+14); }
+  ctx.fillStyle=dim; ctx.fillText("x", padL+plotW/2, padT+plotH+30);
+
+  // ---- error metrics (over region where exact is finite) ----
+  let pErr=0, tErr=0;
+  for(let i=0;i<=samples;i++){
+    const x=xs[i], fx=fe[i];
+    if(!isFinite(fx)) continue;
+    const pe=Math.abs(padeEval(pq,x)-fx);
+    const te=Math.abs(taylorEval(c,m+n,x)-fx);
+    if(isFinite(pe)) pErr=Math.max(pErr,pe);
+    if(isFinite(te)) tErr=Math.max(tErr,te);
+  }
+  $("pade-err").textContent = pErr<1e-3? pErr.toExponential(2) : pErr.toFixed(4);
+  $("taylor-err").textContent = tErr<1e-3? tErr.toExponential(2) : tErr.toFixed(4);
+
+  $("pade-caption").innerHTML =
+    "Total polynomial budget is the same (degree "+(m+n)+"). On ["+x0+", "+x1+"], the Padé [<b>"+m+"/"+n+
+    "</b>] approximant tracks <b>"+s.label+"</b> with max error <span style='color:var(--teal)'>"+
+    (pErr<1e-3?pErr.toExponential(2):pErr.toFixed(4))+"</span> versus the Taylor polynomial's <span style='color:var(--coral)'>"+
+    (tErr<1e-3?tErr.toExponential(2):tErr.toFixed(4))+"</span>. Padé's denominator can reproduce poles and bend back toward "+
+    "the function where a polynomial diverges.";
+}
+
+/* ============================================================
+ *  PART 5 — wiring & theme
+ * ============================================================ */
+function applyTheme(val){
+  document.documentElement.setAttribute("data-theme", val);
+  document.querySelectorAll("#theme-toggle button").forEach(b=>
+    b.classList.toggle("active", b.dataset.themeVal===val));
+  try{ localStorage.setItem("cf-theme", val); }catch(e){}
+  // redraw to pick up new CSS colors
+  if(window._ready){ renderCF(); renderPade(); }
+}
+
+function bind(){
+  $("theme-toggle").addEventListener("click", e=>{
+    const b=e.target.closest("button"); if(b) applyTheme(b.dataset.themeVal);
+  });
+
+  $("cf-input").addEventListener("input", ()=>{
+    const v=parseFloat($("cf-input").value);
+    if(isFinite(v)){ cfState.value=v; cfState.latex="x"; renderCF(); }
+  });
+  $("cf-terms").addEventListener("input", ()=>{
+    let t=parseInt($("cf-terms").value,10);
+    if(isFinite(t)){ t=Math.max(1,Math.min(30,t)); cfState.terms=t; renderCF(); }
+  });
+
+  $("m-slider").addEventListener("input", ()=>{ padeState.m=parseInt($("m-slider").value,10); renderPade(); });
+  $("n-slider").addEventListener("input", ()=>{ padeState.n=parseInt($("n-slider").value,10); renderPade(); });
+
+  window.addEventListener("resize", ()=>{ renderCF(); renderPade(); });
+}
+
+function init(){
+  let saved="dark";
+  try{ saved=localStorage.getItem("cf-theme")||"dark"; }catch(e){}
+  renderCFPresets();
+  renderPadePresets();
+  bind();
+  applyTheme(saved);
+  window._ready=true;
+  renderCF();
+  renderPade();
+}
+
+// wait for KaTeX to load (defer) then init
+if(document.readyState==="complete"){ init(); }
+else { window.addEventListener("load", init); }
+</script>
+</body>
+</html>
